@@ -1,0 +1,88 @@
+# build trees and local installs
+/build/
+/build_*/
+/build-win*/
+/build_win*/
+/install/
+/install_*/
+/install-win*/
+/install_win*/
+
+# CMake, Ninja, and dependency build byproducts
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/compile_commands.json
+**/.ninja_deps
+**/.ninja_log
+**/_deps/
+
+# OCCA/NekRS runtime compilation caches
+.cache/
+**/.cache/
+occa_*.source.*
+*.source.dll
+*.source.exp
+*.source.lib
+*.source.obj
+*.binary.dll
+*.binary.dll.exp
+*.binary.dll.lib
+*.launcher_binary.dll
+*.launcher_binary.dll.exp
+*.launcher_binary.dll.lib
+
+# compiled objects, libraries, executables, and debug artifacts
+*.o
+*.obj
+*.mod
+*.lib
+*.exp
+*.ilk
+*.pdb
+*.dll
+*.exe
+*.manifest
+*.res
+
+# Nek/NekRS run outputs
+*.log
+*.nek5000
+*.f[0-9][0-9][0-9][0-9][0-9]
+/examples/**/*.bp
+/examples/**/*.bp.dir/
+/examples/**/*.vtu
+/examples/**/*.pvtu
+/examples/**/*.visit
+/run/**/*.bp
+/run/**/*.bp.dir/
+/run/**/*.vtu
+/run/**/*.pvtu
+/run/**/*.visit
+logfile
+SESSION.NAME
+ioinfo
+
+# local large archives and packaged build artifacts
+*.tgz
+*.tar
+*.tar.gz
+*.zip
+*.7z
+
+# editor, OS, and local run noise
+.vscode/
+.vs/
+*.suo
+*.user
+*.swp
+Thumbs.db
+Desktop.ini
+codexlog/
+
+# local probe/smoke binaries often created at repository root
+/mpi_type_probe.*
+/occa_smoke.*
+/src.exe
+/src.obj
+/test_special.obj

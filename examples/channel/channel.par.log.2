@@ -1,0 +1,1195 @@
+reading channel.par
+UTC time: Thu May 21 04:16:01 2026
+
+███    ██ ███████ ██   ██ ██████  ███████
+████   ██ ██      ██  ██  ██   ██ ██     
+██ ██  ██ █████   █████   ██████  ███████
+██  ██ ██ ██      ██  ██  ██   ██      ██
+██   ████ ███████ ██   ██ ██   ██ ███████
+(c) 2019-2026 UCHICAGO ARGONNE, LLC
+v26.0.1 (sha:no sha)
+
+default FP precision: 64
+MPI tasks: 2
+
+Initializing device 
+active occa mode: Serial
+
+ENABLE GS COMM OVERLAP disabled
+
+using NEKRS_HOME: C:\1_Development\nekRSW\install_win
+using NEKRS_CACHE_DIR: C:\1_Development\nekRSW\examples\channel/.cache
+using OCCA_CACHE_DIR: C:\1_Development\nekRSW\examples\channel/.cache/occa/
+
+skip building nekInterface (SIZE requires no update)
+loading nek ... done
+
+<<< userSections = CASEDATA
+<<< 
+<<< [GENERAL] 
+<<< polynomialOrder = 7
+<<< #startFrom = "restart.fld"
+<<< numSteps = 100
+<<< dt = 1e-03
+<<< timeStepper = tombo2
+<<< checkpointInterval = 0
+<<< 
+<<< [PROBLEMTYPE]
+<<< equation = Stokes+variableViscosity
+<<< 
+<<< [FLUID VELOCITY]
+<<< boundaryTypeMap = zeroDirichletN/zeroNeumann 
+<<< residualTol = 1e-12
+<<< rho = 1.0
+<<< viscosity = 0.1 
+<<< 
+<<< [FLUID PRESSURE]
+<<< residualTol = 1e-08
+<<< 
+<<< [CASEDATA]
+<<< p_rot = 0.7853981633974483 # \pi / 4
+
+<<< #include "ci.inc"
+<<< 
+<<< static deviceMemory<dfloat> o_nekFU;
+<<< static deviceMemory<dfloat> o_nekMue;
+<<< static dfloat P_ROT;
+<<< 
+<<< 
+<<< void userf(double time)
+<<< {
+<<<   nrs->fluid->o_explicitTerms().copyFrom(o_nekFU, nrs->fluid->fieldOffsetSum);
+<<< }
+<<< 
+<<< void uservp(double time)
+<<< {
+<<<   auto mesh = nrs->meshV;
+<<<   platform->linAlg->fill(mesh->Nlocal, 1.0, nrs->fluid->o_rho);
+<<<   nrs->fluid->o_mue.copyFrom(o_nekMue, mesh->Nlocal);
+<<< }
+<<< 
+<<< void UDF_Setup0(MPI_Comm comm, setupAide &options)
+<<< {
+<<<   options.getArgs("CI-MODE", ciMode);
+<<<   if (ciMode) {
+<<<     ciSetup(comm, options);
+<<<   }
+<<<   platform->par->extract("casedata", "p_rot", P_ROT);
+<<<   if (platform->options.compareArgs("BUILD ONLY", "FALSE")) {
+<<<     *nek::ptr<double>("p_rot") = P_ROT;
+<<<   }
+<<< }
+<<< 
+<<< void UDF_Setup()
+<<< {
+<<<   auto mesh = nrs->meshV;
+<<< 
+<<<   nrs->userSource = &userf;
+<<<   nrs->userProperties = &uservp;
+<<< 
+<<<   o_nekFU.resize(nrs->fluid->fieldOffsetSum);
+<<<   o_nekMue.resize(mesh->Nlocal);
+<<< 
+<<<   nek::userchk();
+<<<   std::vector<double> mul(nek::ptr<double>("mul"), nek::ptr<double>("mul") + mesh->Nlocal);
+<<<   o_nekMue.copyFrom(mul);
+<<< 
+<<<   std::vector<double> FUx(nek::ptr<double>("forcx"), nek::ptr<double>("forcx") + mesh->Nlocal);
+<<<   std::vector<double> FUy(nek::ptr<double>("forcy"), nek::ptr<double>("forcy") + mesh->Nlocal);
+<<<   std::vector<double> FUz(nek::ptr<double>("forcz"), nek::ptr<double>("forcz") + mesh->Nlocal);
+<<< 
+<<<   o_nekFU.copyFrom(FUx, mesh->Nlocal, 0 * nrs->fieldOffset);
+<<<   o_nekFU.copyFrom(FUy, mesh->Nlocal, 1 * nrs->fieldOffset);
+<<<   o_nekFU.copyFrom(FUz, mesh->Nlocal, 2 * nrs->fieldOffset);
+<<< }
+<<< 
+<<< void UDF_ExecuteStep(double time, int tstep)
+<<< {
+<<<   if (nrs->checkpointStep) {
+<<<     nrs->copyToNek(time, tstep);
+<<<     nek::userchk();
+<<<   }
+<<<   if (ciMode) {
+<<<     ciTestErrors(nrs, time, tstep);
+<<<   }
+<<< }
+
+<<< #ifdef __okl__
+<<< 
+<<< #endif
+<<< #ifdef __okl__
+<<< void udfDirichlet(bcData *bc){}
+<<< void udfNeumann(bcData *bc){}
+<<< void udfRobin(bcData *bc){}
+<<< #endif
+
+JIT compiling kernels (this may take awhile if they are not in cache) ...
+done (0.114067s)
+
+loading kernels ...
+loading udf kernels ... 
+done (0.0061001s)
+WARNING: kernel[0] timings differ by up to 1.10 across ranks!
+Ax: Ndim=3 N=7 wordSize=64 wordSizeGeo=64 GDOF/s=0.0301627 GB/s=2.16116 GFLOPS/s=6.21335 constCoeff=0 poisson=0 kernelVer=0
+Ax: N=7 wordSize=64 wordSizeGeo=64 GDOF/s=0.0467974 GB/s=4.47072 GFLOPS/s=7.82376 constCoeff=1 poisson=1 kernelVer=0
+Ax: N=7 wordSize=32 wordSizeGeo=32 GDOF/s=0.047768 GB/s=2.28172 GFLOPS/s=7.98603 constCoeff=1 poisson=1 kernelVer=0
+fdm: N=9 wordSize=32 GDOF/s=0.0629415 GB/s=1.13968 GFLOPS/s=10.4471 kernelVer=0
+Ax: N=3 wordSize=32 wordSizeGeo=32 GDOF/s=0.0430989 GB/s=3.26913 GFLOPS/s=6.53827 constCoeff=1 poisson=1 kernelVer=0
+WARNING: kernel[0] timings differ by up to 1.20 across ranks!
+fdm: N=5 wordSize=32 GDOF/s=0.0534868 GB/s=1.29395 GFLOPS/s=6.74703 kernelVer=0
+done (3.53746s)
+wdotp nFields=01 min/avg/max: 1.760e-05s 1.911e-05s 2.700e-05s  (avg local: 1.557e-05s / 2.525e+01GB/s)
+wdotp nFields=03 min/avg/max: 4.440e-05s 4.513e-05s 5.250e-05s  (avg local: 4.382e-05s / 2.094e+01GB/s)
+
+ reading channel.re2                                                                                                                         
+ hdr:#v002       64  3       64 hdr                                                  
+ reading mesh 
+   readp_re2_mesh:pack/cr/unpack : 0.98E-05 0.14E-04 0.77E-05
+   readp_re2_mesh:byte_read_mpi  : 0.16E-01
+ reading boundary faces                   32 for ifield   1
+   readp_re2_bc:pack/cr/unpack : 0.27E-05 0.41E-05 0.24E-05
+   readp_re2_bc:byte_read_mpi  : 0.48E-02
+ done :: read .re2 file    0.27E-01 sec
+
+Running parCon ...
+parCon (tol = 2.000000e-01) finished in 0.0015533 s
+ reading mesh 
+   readp_re2_mesh:pack/cr/unpack : 0.33E-05 0.77E-05 0.33E-05
+   readp_re2_mesh:byte_read_mpi  : 0.15E-01
+ reading boundary faces                   32 for ifield   1
+   readp_re2_bc:pack/cr/unpack : 0.26E-05 0.43E-05 0.28E-05
+   readp_re2_bc:byte_read_mpi  : 0.51E-02
+ done :: read .re2 file    0.26E-01 sec
+
+ setup mesh topology
+   Right-handed check complete for          64 elements. OK.
+gs_setup: 392 unique labels shared
+   pairwise times (avg, min, max): 8.05e-07 8e-07 8.1e-07
+   crystal router                : 5.8e-07 5.8e-07 5.8e-07
+   all reduce                    : 1.4e-06 1.4e-06 1.4e-06
+   used all_to_all method: crystal router
+   handle bytes (avg, min, max): 130836 130836 130836
+   buffer bytes (avg, min, max): 12544 12544 12544
+   setupds time 1.5302E-03 seconds   0  8       11712          64
+ 
+ nElements   max/min/bal: 32 32 1.00
+ nMessages   max/min/avg: 1 1 1.00
+ msgSize     max/min/avg: 392 392 392.00
+ msgSizeSum  max/min/avg: 392 392 392.00
+ 
+ max multiplicity            8
+ done :: setup mesh topology
+  
+ call usrdat
+ done :: usrdat
+
+ generate geometry data
+ done :: generate geometry data
+  
+ call usrdat2
+ done :: usrdat2
+
+  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00 xyz repair 1
+  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00 xyz repair 2
+  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00 xyz repair 3
+  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00 xyz repair 4
+ regenerate geometry data           1
+ done :: regenerate geometry data           1
+  
+ regenerate geometry data           1
+ done :: regenerate geometry data           1
+  
+ verify mesh topology
+  -1.41421356237309        1.41421356237310       Xrange
+  0.000000000000000E+000   2.82842712474619       Yrange
+  0.000000000000000E+000  0.100000000000000       Zrange
+ done :: verify mesh topology
+  
+ call usrdat3
+ done :: usrdat3
+
+ nek setup done in    7.7295E-02 s
+ 
+done (0.0044905)
+generating mesh ...
+loading mesh from nek ... Nelements: 64, NboundaryIDs: 1, NboundaryFaces: 16 done (3.05e-05s)
+polynomial order N: 7, over-integration order cubN: 10
+meshParallelGatherScatterSetup N=7
+autotuning gs for wordSize=8 nFields=1 
+local: 2.6800e-05s (8.0GB/s)
+pack/unpack host + hostBuffer MPI using pw: 2.8900e-05s 
+pack/unpack device + hostBuffer MPI using pw: 4.9000e-05s 
+pack/unpack device + hostBuffer MPI using nbc: 4.9000e-05s 
+MPI min/max/avg: 6.00e-07s 6.00e-07s 6.00e-07s / avg bi-bw: 10.5GB/s/rank
+autotuning gs for wordSize=8 nFields=3 
+local: 1.0290e-04s (4.9GB/s)
+pack/unpack host + hostBuffer MPI using pw: 1.3440e-04s 
+pack/unpack device + hostBuffer MPI using pw: 1.3670e-04s 
+pack/unpack device + hostBuffer MPI using nbc: 1.3670e-04s 
+MPI min/max/avg: 3.20e-06s 3.20e-06s 3.20e-06s / avg bi-bw: 5.9GB/s/rank
+ mesh metrics:
+ GLL grid spacing min/max    : 6.41E-03 5.23E-02
+ scaled Jacobian  min/max/avg: 1.00E+00 1.00E+00 1.00E+00
+ aspect ratio     min/max/avg: 2.50E+00 2.50E+00 2.50E+00
+ 
+unique number of gridpoints: : 22344
+number of interior elements min/max:  0%   0%
+================ SETUP FLUID ================
+bID 1 -> bcType zeroDirichletN/zeroNeumann
+setting IC ... 
+ useric for ifld            1
+copying solution from nek
+copying solution to nek
+ regenerate geometry data           1
+ done :: regenerate geometry data           1
+  
+     0   1.0450E-14   4.3856E-14 Linf VX VY
+calling nek_userchk ...
+copying solution from nek
+calling UDF_Setup ... 
+     0   1.0450E-14   4.3856E-14 Linf VX VY
+calling nek_userchk ...
+copying solution to nek
+ regenerate geometry data           1
+ done :: regenerate geometry data           1
+  
+done (0.0157319s)
+================= ELLIPTIC SETUP FLUID VELOCITY =================
+Nfields: 3
+autotuning gs for wordSize=8 nFields=3 
+local: 8.1200e-05s (6.2GB/s)
+pack/unpack host + hostBuffer MPI using pw: 1.0340e-04s 
+pack/unpack device + hostBuffer MPI using pw: 1.0300e-04s 
+pack/unpack device + hostBuffer MPI using nbc: 1.0570e-04s 
+MPI min/max/avg: 5.10e-06s 5.20e-06s 5.15e-06s / avg bi-bw: 3.6GB/s/rank
+building Jacobi preconditioner ... done (0.0035361s)
+done (0.0571309s)
+================= ELLIPTIC SETUP FLUID PRESSURE =================
+Nfields: 1
+non-trivial nullSpace detected
+autotuning gs for wordSize=8 nFields=1 
+local: 2.8100e-05s (7.7GB/s)
+pack/unpack host + hostBuffer MPI using pw: 1.9300e-05s 
+pack/unpack device + hostBuffer MPI using pw: 4.0700e-05s 
+pack/unpack device + hostBuffer MPI using nbc: 3.9100e-05s 
+MPI min/max/avg: 2.80e-06s 3.00e-06s 2.90e-06s / avg bi-bw: 2.1GB/s/rank
+building MG preconditioner ... 
+============= BUILDING pMG7 ==================
+autotuning gs for wordSize=4 nFields=1 
+local: 2.5400e-05s (5.6GB/s)
+pack/unpack host + hostBuffer MPI using pw: 2.1600e-05s 
+pack/unpack device + hostBuffer MPI using pw: 2.8300e-05s 
+pack/unpack device + hostBuffer MPI using nbc: 2.7600e-05s 
+MPI min/max/avg: 1.90e-06s 2.00e-06s 1.95e-06s / avg bi-bw: 1.6GB/s/rank
+autotuning gs for wordSize=4 nFields=1 
+local: 3.0400e-05s (6.2GB/s)
+pack/unpack host + hostBuffer MPI using pw: 2.7600e-05s 
+pack/unpack device + hostBuffer MPI using pw: 4.7900e-05s 
+pack/unpack device + hostBuffer MPI using nbc: 4.7700e-05s 
+MPI min/max/avg: 8.00e-07s 9.00e-07s 8.50e-07s / avg bi-bw: 4.6GB/s/rank
+estimating maxEigenvalue ... value=1.35837 done (0.0294235s)
+============= BUILDING pMG3 ==================
+meshParallelGatherScatterSetup N=3
+done (0.0062322s)
+autotuning gs for wordSize=4 nFields=1 
+local: 7.6000e-06s (3.5GB/s)
+pack/unpack host + hostBuffer MPI using pw: 1.0000e-05s 
+pack/unpack device + hostBuffer MPI using pw: 9.8000e-06s 
+pack/unpack device + hostBuffer MPI using nbc: 1.0100e-05s 
+MPI min/max/avg: 1.30e-06s 1.40e-06s 1.35e-06s / avg bi-bw: 0.4GB/s/rank
+autotuning gs for wordSize=4 nFields=1 
+local: 1.0500e-05s (4.5GB/s)
+pack/unpack host + hostBuffer MPI using pw: 1.1500e-05s 
+pack/unpack device + hostBuffer MPI using pw: 1.8400e-05s 
+pack/unpack device + hostBuffer MPI using nbc: 1.8600e-05s 
+MPI min/max/avg: 1.30e-06s 1.50e-06s 1.40e-06s / avg bi-bw: 0.7GB/s/rank
+estimating maxEigenvalue ... value=1.32686 done (0.0029671s)
+============= BUILDING COARSE pMG1 ==================
+meshParallelGatherScatterSetup N=1
+done (0.0064969s)
+autotuning gs for wordSize=4 nFields=1 
+local: 2.3000e-06s (1.6GB/s)
+pack/unpack host + hostBuffer MPI using pw: 7.3000e-06s 
+pack/unpack device + hostBuffer MPI using pw: 9.3000e-06s 
+pack/unpack device + hostBuffer MPI using nbc: 9.3000e-06s 
+MPI min/max/avg: 1.20e-06s 1.20e-06s 1.20e-06s / avg bi-bw: 0.1GB/s/rank
+building FEM matrix ... done (0.0003912s)
+setup FEM solver ...
+
+ Num MPI tasks = 2
+
+ Num OpenMP threads = 1
+
+
+BoomerAMG SETUP PARAMETERS:
+
+ Max levels = 25
+ Num levels = 3
+
+ Strength Threshold = 0.250000
+ Interpolation Truncation Factor = 0.000000
+ Maximum Row Sum Threshold for Dependency Weakening = 0.900000
+
+ Coarsening Type = HMIS 
+ measures are determined locally
+
+
+ No global partition option chosen.
+
+ Interpolation = extended+i interpolation
+
+Operator Matrix Information:
+
+             nonzero            entries/row          row sums
+lev    rows  entries sparse   min  max     avg      min         max
+======================================================================
+  0      72      344  0.066     4    5     4.8   0.000e+00   1.490e-08
+  1      36      292  0.225     6    9     8.1  -2.794e-08   1.863e-09
+  2       8       60  0.938     6    8     7.5  -1.639e-07  -3.446e-08
+
+
+Interpolation Matrix Information:
+                    entries/row        min        max            row sums
+lev  rows x cols  min  max  avgW     weight      weight       min         max
+================================================================================
+  0    72 x 36      1    4   3.8   2.500e-01   5.000e-01   1.000e+00   1.000e+00
+  1    36 x 8       1    4   3.6   6.667e-02   8.636e-01   1.000e+00   1.000e+00
+
+
+     Complexity:   grid = 1.611111
+               operator = 2.023256
+                 memory = 2.843023
+
+
+
+
+BoomerAMG SOLVER PARAMETERS:
+
+  Maximum number of cycles:         1 
+  Stopping Tolerance:               0.000000e+00 
+  Cycle type (1 = V, 2 = W, etc.):  1
+
+  Relaxation Parameters:
+   Visiting Grid:                     down   up  coarse
+            Number of sweeps:            1    1     3 
+   Type 0=Jac, 3=hGS, 6=hSGS, 9=GE:     16   16    16 
+   Point types, partial sweeps (1=C, -1=F):
+                  Pre-CG relaxation (down):   0
+                   Post-CG relaxation (up):   0
+                             Coarsest grid:   0   0   0
+
+done (0.0066634s)
+-----------------------------------------------------------------------
+level|    Type    |                 |     Smoother                    |
+     |            |                 |                                 |
+-----------------------------------------------------------------------
+   0 |    pMG     |   Matrix-free   | Opt. 4th Kind Chebyshev+ASM(3,3)
+     |            |     p =  7      |
+   1 |    pMG     |   Matrix-free   | Opt. 4th Kind Chebyshev+ASM(3,3)
+     |            |     p =  3      |
+   2 |    AMG     |   FEM Matrix    | 
+-----------------------------------------------------------------------
+done (0.152726s)
+done (0.181542s)
+
+options:
+key: APPLICATION,                                                   value: NRS
+key: BDF ORDER,                                                     value: 2
+key: BUILD ONLY,                                                    value: FALSE
+key: CASENAME,                                                      value: channel
+key: CHECKPOINT CONTROL,                                            value: STEPS
+key: CHECKPOINT ENGINE,                                             value: NEK
+key: CHECKPOINT INTERVAL,                                           value: 0.000000
+key: CHECKPOINT OUTPUT MESH,                                        value: FALSE
+key: CHECKPOINT PRECISION,                                          value: FP32
+key: CHECKPOINT READ CRYSTAL ROUTER,                                value: TRUE
+key: CI-MODE,                                                       value: 0
+key: CONSTANT FLOW RATE,                                            value: FALSE
+key: CUBATURE POLYNOMIAL DEGREE,                                    value: 10
+key: DEVICE NUMBER,                                                 value: LOCAL-RANK
+key: DT,                                                            value: 1.0000000000000000e-03
+key: ELEMENT MAP,                                                   value: ISOPARAMETRIC
+key: ELEMENT TYPE,                                                  value: 12
+key: ENABLE GS COMM OVERLAP,                                        value: FALSE
+key: EQUATION TYPE,                                                 value: STOKES
+key: EXT ORDER,                                                     value: 3
+key: FLUID,                                                         value: TRUE
+key: FLUID CHECKPOINTING,                                           value: TRUE
+key: FLUID DENSITY,                                                 value: 1.0000000000000000e+00
+key: FLUID PRESSURE ELLIPTIC COEFF FIELD,                           value: FALSE
+key: FLUID PRESSURE ELLIPTIC PRECO COEFF FIELD,                     value: FALSE
+key: FLUID PRESSURE HELMHOLTZ TYPE,                                 value: POISSON
+key: FLUID PRESSURE INITIAL GUESS,                                  value: PROJECTION-ACONJ
+key: FLUID PRESSURE MGSOLVER CYCLE,                                 value: VCYCLE+MULTIPLICATIVE
+key: FLUID PRESSURE MULTIGRID CHEBYSHEV DEGREE,                     value: 3
+key: FLUID PRESSURE MULTIGRID CHEBYSHEV MAX EIGENVALUE BOUND FACTOR,value: 1.1
+key: FLUID PRESSURE MULTIGRID COARSE SOLVER,                        value: BOOMERAMG
+key: FLUID PRESSURE MULTIGRID COARSE SOLVER LOCATION,               value: CPU
+key: FLUID PRESSURE MULTIGRID COARSE SOLVER PRECISION,              value: FP32
+key: FLUID PRESSURE MULTIGRID SMOOTHER,                             value: FOURTHOPTCHEBYSHEV+ASM
+key: FLUID PRESSURE PRECONDITIONER,                                 value: MULTIGRID
+key: FLUID PRESSURE SOLVER,                                         value: GMRES+FLEXIBLE+NVECTOR=15
+key: FLUID PRESSURE SOLVER TOLERANCE,                               value: 1e-08
+key: FLUID STRESSFORMULATION,                                       value: TRUE
+key: FLUID VELOCITY ELLIPTIC COEFF FIELD,                           value: TRUE
+key: FLUID VELOCITY ELLIPTIC PRECO COEFF FIELD,                     value: TRUE
+key: FLUID VELOCITY INITIAL GUESS,                                  value: EXTRAPOLATION
+key: FLUID VELOCITY PRECONDITIONER,                                 value: JACOBI
+key: FLUID VELOCITY REGULARIZATION METHOD,                          value: NONE
+key: FLUID VELOCITY SOLVER,                                         value: CG+BLOCK
+key: FLUID VELOCITY SOLVER TOLERANCE,                               value: 1e-12
+key: FLUID VELOCITY STRESSFORMULATION,                              value: TRUE
+key: FLUID VISCOSITY,                                               value: 1.0000000000000001e-01
+key: FORMAT,                                                        value: 1.0
+key: MESH DIMENSION,                                                value: 3
+key: MESH FILE,                                                     value: channel.re2
+key: MOVING MESH,                                                   value: FALSE
+key: NEK USR FILE,                                                  value: channel.usr
+key: NUMBER OF SCALARS,                                             value: 0
+key: NUMBER TIMESTEPS,                                              value: 100
+key: OKL FILE CACHE,                                                value: C:\1_Development\nekRSW\examples\channel/.cache/udf/udf.okl
+key: OVERINTEGRATION,                                               value: TRUE
+key: PLATFORM NUMBER,                                               value: 0
+key: POLYNOMIAL DEGREE,                                             value: 7
+key: START TIME,                                                    value: 0.0
+key: STDOUT PAR,                                                    value: TRUE
+key: STDOUT UDF,                                                    value: TRUE
+key: SUBCYCLING STEPS,                                              value: 0
+key: THREAD MODEL,                                                  value: SERIAL
+key: UDF FILE,                                                      value: channel.udf
+key: VERBOSE,                                                       value: FALSE
+
+occa max memory usage:     32535022 bytes
+  deviceMemoryPool:         2228224 bytes
+  mempool:                   393216 bytes
+================= INITIAL CONDITION ====================
+MESH X          min/max: -1.41421 1.41421  0 2.82843  0 0.1
+FLUID U         min/max: -0.707107 0.707107  -0.707107 0.707107  0 0
+FLUID p         min/max: 0 0
+
+initialization took 4.2124 s
+
+timestepping for 100 steps ...
+
+step=1        FLUID p             : iter 002  resNorm0 2.36e-06  resNorm 3.89e-09
+step=1        FLUID U             : iter 027  resNorm0 2.47e-08  resNorm 6.10e-13
+step=1        FLUID divUErr       : 3.02e-16  7.10e-07
+step=1        t= 1.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=1        elapsedStep= 1.50e-01s  elapsedStepSum= 1.50343e-01s
+::
+step=2        FLUID p             : iter 002  resNorm0 8.91e-07  resNorm 8.90e-10
+step=2        FLUID U             : iter 024  resNorm0 2.05e-08  resNorm 4.81e-13
+step=2        FLUID divUErr       : 3.02e-16  7.05e-07
+step=2        t= 2.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=2        elapsedStep= 7.11e-02s  elapsedStepSum= 2.21413e-01s
+::
+step=3        FLUID p             : iter 001  resNorm0 7.96e-08  resNorm 6.06e-09
+step=3        FLUID U             : iter 021  resNorm0 6.43e-09  resNorm 6.15e-13
+step=3        FLUID divUErr       : 3.06e-16  7.05e-07
+step=3        t= 3.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=3        elapsedStep= 6.79e-02s  elapsedStepSum= 2.89356e-01s
+::
+step=4        FLUID p             : iter 002  resNorm0 6.78e-08  resNorm 1.18e-10
+step=4        FLUID U             : iter 020  resNorm0 5.74e-09  resNorm 6.18e-13
+step=4        FLUID divUErr       : 3.23e-16  7.05e-07
+step=4        t= 4.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=4        elapsedStep= 8.81e-02s  elapsedStepSum= 3.77478e-01s
+::
+step=5        FLUID p             : iter 001  resNorm0 3.17e-09  resNorm 2.81e-10
+step=5        FLUID U             : iter 014  resNorm0 2.25e-10  resNorm 6.03e-13
+step=5        FLUID divUErr       : 2.94e-16  7.04e-07
+step=5        t= 5.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=5        elapsedStep= 4.73e-02s  elapsedStepSum= 4.24732e-01s
+::
+step=6        proj FLUID p        : resNorm0 1.30e-09  resNorm 1.37e-09  ratio = 9.490e-01  1/8
+step=6        FLUID p             : iter 001  resNorm0 1.37e-09  resNorm 2.77e-10
+step=6        FLUID U             : iter 014  resNorm0 1.25e-10  resNorm 5.32e-13
+step=6        FLUID divUErr       : 2.94e-16  7.04e-07
+step=6        t= 6.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=6        elapsedStep= 4.67e-02s  elapsedStepSum= 4.71460e-01s
+::
+step=7        proj FLUID p        : resNorm0 4.07e-10  resNorm 4.59e-10  ratio = 8.878e-01  2/8
+step=7        FLUID p             : iter 001  resNorm0 4.59e-10  resNorm 3.32e-11
+step=7        FLUID U             : iter 011  resNorm0 4.13e-11  resNorm 6.28e-13
+step=7        FLUID divUErr       : 3.06e-16  7.04e-07
+step=7        t= 7.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=7        elapsedStep= 4.61e-02s  elapsedStepSum= 5.17517e-01s
+::
+step=8        proj FLUID p        : resNorm0 1.43e-10  resNorm 2.58e-10  ratio = 5.545e-01  3/8
+step=8        FLUID p             : iter 001  resNorm0 2.58e-10  resNorm 1.81e-11
+step=8        FLUID U             : iter 009  resNorm0 1.78e-11  resNorm 5.69e-13
+step=8        FLUID divUErr       : 2.95e-16  7.04e-07
+step=8        t= 8.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=8        elapsedStep= 4.10e-02s  elapsedStepSum= 5.58546e-01s
+::
+step=9        proj FLUID p        : resNorm0 6.52e-11  resNorm 6.82e-11  ratio = 9.565e-01  4/8
+step=9        FLUID p             : iter 001  resNorm0 6.82e-11  resNorm 5.69e-12
+step=9        FLUID U             : iter 006  resNorm0 6.93e-12  resNorm 5.36e-13
+step=9        FLUID divUErr       : 3.07e-16  7.04e-07
+step=9        t= 9.00000000e-03  dt=1.0e-03  CFL= 0.062
+step=9        elapsedStep= 3.21e-02s  elapsedStepSum= 5.90667e-01s
+::
+step=10       proj FLUID p        : resNorm0 4.58e-11  resNorm 3.49e-11  ratio = 1.311e+00  5/8
+step=10       FLUID p             : iter 001  resNorm0 3.49e-11  resNorm 2.30e-12
+step=10       FLUID U             : iter 005  resNorm0 3.51e-12  resNorm 5.51e-13
+step=10       FLUID divUErr       : 2.97e-16  7.04e-07
+step=10       t= 1.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=10       elapsedStep= 2.90e-02s  elapsedStepSum= 6.19635e-01s
+::
+step=11       proj FLUID p        : resNorm0 2.87e-11  resNorm 1.72e-11  ratio = 1.669e+00  6/8
+step=11       FLUID p             : iter 001  resNorm0 1.72e-11  resNorm 8.57e-13
+step=11       FLUID U             : iter 004  resNorm0 2.24e-12  resNorm 5.61e-13
+step=11       FLUID divUErr       : 2.95e-16  7.04e-07
+step=11       t= 1.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=11       elapsedStep= 4.23e-02s  elapsedStepSum= 6.61946e-01s
+::
+step=12       proj FLUID p        : resNorm0 2.09e-11  resNorm 1.37e-11  ratio = 1.529e+00  7/8
+step=12       FLUID p             : iter 001  resNorm0 1.37e-11  resNorm 6.83e-13
+step=12       FLUID U             : iter 003  resNorm0 1.88e-12  resNorm 6.02e-13
+step=12       FLUID divUErr       : 3.04e-16  7.04e-07
+step=12       t= 1.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=12       elapsedStep= 4.50e-02s  elapsedStepSum= 7.06906e-01s
+::
+step=13       proj FLUID p        : resNorm0 2.20e-11  resNorm 1.43e-11  ratio = 1.540e+00  8/8
+step=13       FLUID p             : iter 001  resNorm0 1.43e-11  resNorm 8.62e-13
+step=13       FLUID U             : iter 003  resNorm0 1.97e-12  resNorm 5.75e-13
+step=13       FLUID divUErr       : 2.93e-16  7.04e-07
+step=13       t= 1.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=13       elapsedStep= 4.37e-02s  elapsedStepSum= 7.50651e-01s
+::
+step=14       proj FLUID p        : resNorm0 1.86e-11  resNorm 1.86e-11  ratio = 9.983e-01  1/8
+step=14       FLUID p             : iter 001  resNorm0 1.86e-11  resNorm 9.70e-13
+step=14       FLUID U             : iter 002  resNorm0 2.11e-12  resNorm 5.50e-13
+step=14       FLUID divUErr       : 3.11e-16  7.04e-07
+step=14       t= 1.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=14       elapsedStep= 3.92e-02s  elapsedStepSum= 7.89829e-01s
+::
+step=15       proj FLUID p        : resNorm0 1.95e-11  resNorm 1.31e-11  ratio = 1.492e+00  2/8
+step=15       FLUID p             : iter 001  resNorm0 1.31e-11  resNorm 5.59e-13
+step=15       FLUID U             : iter 003  resNorm0 1.82e-12  resNorm 5.30e-13
+step=15       FLUID divUErr       : 3.15e-16  7.04e-07
+step=15       t= 1.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=15       elapsedStep= 4.31e-02s  elapsedStepSum= 8.32919e-01s
+::
+step=16       proj FLUID p        : resNorm0 1.40e-11  resNorm 1.02e-11  ratio = 1.378e+00  3/8
+step=16       FLUID p             : iter 001  resNorm0 1.02e-11  resNorm 6.03e-13
+step=16       FLUID U             : iter 002  resNorm0 1.52e-12  resNorm 3.65e-13
+step=16       FLUID divUErr       : 2.94e-16  7.04e-07
+step=16       t= 1.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=16       elapsedStep= 4.06e-02s  elapsedStepSum= 8.73510e-01s
+::
+step=17       proj FLUID p        : resNorm0 1.51e-11  resNorm 1.47e-11  ratio = 1.027e+00  4/8
+step=17       FLUID p             : iter 001  resNorm0 1.47e-11  resNorm 3.48e-13
+step=17       FLUID U             : iter 003  resNorm0 1.22e-12  resNorm 4.74e-13
+step=17       FLUID divUErr       : 2.90e-16  7.04e-07
+step=17       t= 1.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=17       elapsedStep= 4.35e-02s  elapsedStepSum= 9.17048e-01s
+::
+step=18       proj FLUID p        : resNorm0 9.26e-12  resNorm 6.41e-12  ratio = 1.444e+00  5/8
+step=18       FLUID p             : iter 001  resNorm0 6.41e-12  resNorm 2.91e-13
+step=18       FLUID U             : iter 002  resNorm0 1.33e-12  resNorm 2.43e-13
+step=18       FLUID divUErr       : 3.00e-16  7.04e-07
+step=18       t= 1.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=18       elapsedStep= 4.15e-02s  elapsedStepSum= 9.58518e-01s
+::
+step=19       proj FLUID p        : resNorm0 1.12e-11  resNorm 6.22e-12  ratio = 1.803e+00  6/8
+step=19       FLUID p             : iter 001  resNorm0 6.22e-12  resNorm 2.44e-13
+step=19       FLUID U             : iter 001  resNorm0 1.06e-12  resNorm 6.32e-13
+step=19       FLUID divUErr       : 2.85e-16  7.04e-07
+step=19       t= 1.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=19       elapsedStep= 3.87e-02s  elapsedStepSum= 9.97263e-01s
+::
+step=20       proj FLUID p        : resNorm0 7.96e-12  resNorm 5.11e-12  ratio = 1.557e+00  7/8
+step=20       FLUID p             : iter 001  resNorm0 5.11e-12  resNorm 2.03e-13
+step=20       FLUID U             : iter 002  resNorm0 1.64e-12  resNorm 5.30e-13
+step=20       FLUID divUErr       : 2.91e-16  7.04e-07
+step=20       t= 2.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=20       elapsedStep= 4.18e-02s  elapsedStepSum= 1.03910e+00s
+::
+step=21       proj FLUID p        : resNorm0 1.29e-11  resNorm 4.08e-12  ratio = 3.154e+00  8/8
+step=21       FLUID p             : iter 001  resNorm0 4.08e-12  resNorm 1.78e-13
+step=21       FLUID U             : iter 001  resNorm0 1.46e-12  resNorm 5.18e-13
+step=21       FLUID divUErr       : 2.91e-16  7.04e-07
+step=21       t= 2.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=21       elapsedStep= 3.81e-02s  elapsedStepSum= 1.07716e+00s
+::
+step=22       proj FLUID p        : resNorm0 1.16e-11  resNorm 1.23e-11  ratio = 9.442e-01  1/8
+step=22       FLUID p             : iter 001  resNorm0 1.23e-11  resNorm 3.11e-13
+step=22       FLUID U             : iter 001  resNorm0 1.55e-12  resNorm 5.47e-13
+step=22       FLUID divUErr       : 3.14e-16  7.04e-07
+step=22       t= 2.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=22       elapsedStep= 3.14e-02s  elapsedStepSum= 1.10851e+00s
+::
+step=23       proj FLUID p        : resNorm0 1.03e-11  resNorm 9.94e-12  ratio = 1.040e+00  2/8
+step=23       FLUID p             : iter 001  resNorm0 9.94e-12  resNorm 3.78e-13
+step=23       FLUID U             : iter 001  resNorm0 1.89e-12  resNorm 5.28e-13
+step=23       FLUID divUErr       : 2.99e-16  7.04e-07
+step=23       t= 2.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=23       elapsedStep= 2.51e-02s  elapsedStepSum= 1.13357e+00s
+::
+step=24       proj FLUID p        : resNorm0 1.02e-11  resNorm 1.14e-11  ratio = 8.966e-01  3/8
+step=24       FLUID p             : iter 001  resNorm0 1.14e-11  resNorm 3.57e-13
+step=24       FLUID U             : iter 001  resNorm0 1.92e-12  resNorm 6.31e-13
+step=24       FLUID divUErr       : 3.19e-16  7.04e-07
+step=24       t= 2.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=24       elapsedStep= 3.77e-02s  elapsedStepSum= 1.17126e+00s
+::
+step=25       proj FLUID p        : resNorm0 9.29e-12  resNorm 5.63e-12  ratio = 1.650e+00  4/8
+step=25       FLUID p             : iter 001  resNorm0 5.63e-12  resNorm 2.25e-13
+step=25       FLUID U             : iter 003  resNorm0 1.99e-12  resNorm 4.12e-13
+step=25       FLUID divUErr       : 3.04e-16  7.04e-07
+step=25       t= 2.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=25       elapsedStep= 4.37e-02s  elapsedStepSum= 1.21499e+00s
+::
+step=26       proj FLUID p        : resNorm0 1.17e-11  resNorm 9.36e-12  ratio = 1.251e+00  5/8
+step=26       FLUID p             : iter 001  resNorm0 9.36e-12  resNorm 4.13e-13
+step=26       FLUID U             : iter 002  resNorm0 1.62e-12  resNorm 1.63e-13
+step=26       FLUID divUErr       : 3.05e-16  7.04e-07
+step=26       t= 2.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=26       elapsedStep= 4.11e-02s  elapsedStepSum= 1.25609e+00s
+::
+step=27       proj FLUID p        : resNorm0 9.01e-12  resNorm 6.29e-12  ratio = 1.432e+00  6/8
+step=27       FLUID p             : iter 001  resNorm0 6.29e-12  resNorm 3.05e-13
+step=27       FLUID U             : iter 001  resNorm0 9.67e-13  resNorm 6.12e-13
+step=27       FLUID divUErr       : 2.96e-16  7.04e-07
+step=27       t= 2.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=27       elapsedStep= 3.85e-02s  elapsedStepSum= 1.29455e+00s
+::
+step=28       proj FLUID p        : resNorm0 8.04e-12  resNorm 5.80e-12  ratio = 1.385e+00  7/8
+step=28       FLUID p             : iter 001  resNorm0 5.80e-12  resNorm 2.15e-13
+step=28       FLUID U             : iter 001  resNorm0 1.70e-12  resNorm 4.11e-13
+step=28       FLUID divUErr       : 2.99e-16  7.04e-07
+step=28       t= 2.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=28       elapsedStep= 3.90e-02s  elapsedStepSum= 1.33351e+00s
+::
+step=29       proj FLUID p        : resNorm0 1.02e-11  resNorm 4.21e-12  ratio = 2.414e+00  8/8
+step=29       FLUID p             : iter 001  resNorm0 4.21e-12  resNorm 1.53e-13
+step=29       FLUID U             : iter 001  resNorm0 1.99e-12  resNorm 3.66e-13
+step=29       FLUID divUErr       : 3.06e-16  7.04e-07
+step=29       t= 2.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=29       elapsedStep= 3.81e-02s  elapsedStepSum= 1.37163e+00s
+::
+step=30       proj FLUID p        : resNorm0 7.49e-12  resNorm 9.75e-12  ratio = 7.680e-01  1/8
+step=30       FLUID p             : iter 001  resNorm0 9.75e-12  resNorm 4.40e-13
+step=30       FLUID U             : iter 001  resNorm0 1.46e-12  resNorm 4.27e-13
+step=30       FLUID divUErr       : 3.10e-16  7.04e-07
+step=30       t= 3.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=30       elapsedStep= 3.67e-02s  elapsedStepSum= 1.40835e+00s
+::
+step=31       proj FLUID p        : resNorm0 6.94e-12  resNorm 6.71e-12  ratio = 1.034e+00  2/8
+step=31       FLUID p             : iter 001  resNorm0 6.71e-12  resNorm 3.33e-13
+step=31       FLUID U             : iter 001  resNorm0 1.31e-12  resNorm 5.12e-13
+step=31       FLUID divUErr       : 3.03e-16  7.04e-07
+step=31       t= 3.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=31       elapsedStep= 3.72e-02s  elapsedStepSum= 1.44559e+00s
+::
+step=32       proj FLUID p        : resNorm0 7.79e-12  resNorm 4.14e-12  ratio = 1.879e+00  3/8
+step=32       FLUID p             : iter 001  resNorm0 4.14e-12  resNorm 1.81e-13
+step=32       FLUID U             : iter 001  resNorm0 1.68e-12  resNorm 4.29e-13
+step=32       FLUID divUErr       : 3.04e-16  7.04e-07
+step=32       t= 3.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=32       elapsedStep= 3.78e-02s  elapsedStepSum= 1.48337e+00s
+::
+step=33       proj FLUID p        : resNorm0 7.82e-12  resNorm 2.87e-12  ratio = 2.724e+00  4/8
+step=33       FLUID p             : iter 001  resNorm0 2.87e-12  resNorm 9.39e-14
+step=33       FLUID U             : iter 001  resNorm0 1.63e-12  resNorm 3.90e-13
+step=33       FLUID divUErr       : 2.84e-16  7.04e-07
+step=33       t= 3.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=33       elapsedStep= 3.79e-02s  elapsedStepSum= 1.52123e+00s
+::
+step=34       proj FLUID p        : resNorm0 6.45e-12  resNorm 2.25e-12  ratio = 2.868e+00  5/8
+step=34       FLUID p             : iter 001  resNorm0 2.25e-12  resNorm 7.37e-14
+step=34       FLUID U             : iter 001  resNorm0 1.32e-12  resNorm 3.69e-13
+step=34       FLUID divUErr       : 2.92e-16  7.04e-07
+step=34       t= 3.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=34       elapsedStep= 3.84e-02s  elapsedStepSum= 1.55960e+00s
+::
+step=35       proj FLUID p        : resNorm0 6.01e-12  resNorm 1.83e-12  ratio = 3.290e+00  6/8
+step=35       FLUID p             : iter 001  resNorm0 1.83e-12  resNorm 4.15e-14
+step=35       FLUID U             : iter 001  resNorm0 1.23e-12  resNorm 3.13e-13
+step=35       FLUID divUErr       : 3.12e-16  7.04e-07
+step=35       t= 3.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=35       elapsedStep= 3.88e-02s  elapsedStepSum= 1.59843e+00s
+::
+step=36       proj FLUID p        : resNorm0 5.76e-12  resNorm 7.71e-13  ratio = 7.474e+00  7/8
+step=36       FLUID p             : iter 001  resNorm0 7.71e-13  resNorm 3.70e-14
+step=36       FLUID U             : iter 001  resNorm0 1.15e-12  resNorm 2.77e-13
+step=36       FLUID divUErr       : 2.93e-16  7.04e-07
+step=36       t= 3.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=36       elapsedStep= 3.92e-02s  elapsedStepSum= 1.63766e+00s
+::
+step=37       proj FLUID p        : resNorm0 5.02e-12  resNorm 5.65e-13  ratio = 8.894e+00  8/8
+step=37       FLUID p             : iter 001  resNorm0 5.65e-13  resNorm 2.75e-14
+step=37       FLUID U             : iter 001  resNorm0 9.92e-13  resNorm 3.02e-13
+step=37       FLUID divUErr       : 2.92e-16  7.04e-07
+step=37       t= 3.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=37       elapsedStep= 3.77e-02s  elapsedStepSum= 1.67537e+00s
+::
+step=38       proj FLUID p        : resNorm0 4.87e-12  resNorm 7.45e-12  ratio = 6.538e-01  1/8
+step=38       FLUID p             : iter 001  resNorm0 7.45e-12  resNorm 3.30e-13
+step=38       FLUID U             : iter 001  resNorm0 1.01e-12  resNorm 3.21e-13
+step=38       FLUID divUErr       : 2.84e-16  7.04e-07
+step=38       t= 3.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=38       elapsedStep= 3.66e-02s  elapsedStepSum= 1.71196e+00s
+::
+step=39       proj FLUID p        : resNorm0 5.41e-12  resNorm 5.13e-12  ratio = 1.055e+00  2/8
+step=39       FLUID p             : iter 001  resNorm0 5.13e-12  resNorm 2.59e-13
+step=39       FLUID U             : iter 001  resNorm0 1.12e-12  resNorm 3.26e-13
+step=39       FLUID divUErr       : 3.03e-16  7.04e-07
+step=39       t= 3.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=39       elapsedStep= 3.69e-02s  elapsedStepSum= 1.74890e+00s
+::
+step=40       proj FLUID p        : resNorm0 5.48e-12  resNorm 1.42e-12  ratio = 3.873e+00  3/8
+step=40       FLUID p             : iter 001  resNorm0 1.42e-12  resNorm 7.87e-14
+step=40       FLUID U             : iter 001  resNorm0 1.14e-12  resNorm 3.46e-13
+step=40       FLUID divUErr       : 3.04e-16  7.04e-07
+step=40       t= 4.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=40       elapsedStep= 3.74e-02s  elapsedStepSum= 1.78633e+00s
+::
+step=41       proj FLUID p        : resNorm0 5.33e-12  resNorm 8.83e-13  ratio = 6.028e+00  4/8
+step=41       FLUID p             : iter 001  resNorm0 8.83e-13  resNorm 4.80e-14
+step=41       FLUID U             : iter 001  resNorm0 1.14e-12  resNorm 3.54e-13
+step=41       FLUID divUErr       : 2.98e-16  7.04e-07
+step=41       t= 4.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=41       elapsedStep= 3.79e-02s  elapsedStepSum= 1.82423e+00s
+::
+step=42       proj FLUID p        : resNorm0 5.43e-12  resNorm 1.22e-12  ratio = 4.464e+00  5/8
+step=42       FLUID p             : iter 001  resNorm0 1.22e-12  resNorm 3.08e-14
+step=42       FLUID U             : iter 001  resNorm0 1.17e-12  resNorm 3.42e-13
+step=42       FLUID divUErr       : 2.97e-16  7.04e-07
+step=42       t= 4.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=42       elapsedStep= 3.85e-02s  elapsedStepSum= 1.86273e+00s
+::
+step=43       proj FLUID p        : resNorm0 5.47e-12  resNorm 8.04e-13  ratio = 6.806e+00  6/8
+step=43       FLUID p             : iter 001  resNorm0 8.04e-13  resNorm 2.61e-14
+step=43       FLUID U             : iter 001  resNorm0 1.14e-12  resNorm 3.35e-13
+step=43       FLUID divUErr       : 3.20e-16  7.04e-07
+step=43       t= 4.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=43       elapsedStep= 3.27e-02s  elapsedStepSum= 1.89540e+00s
+::
+step=44       proj FLUID p        : resNorm0 5.20e-12  resNorm 4.81e-13  ratio = 1.082e+01  7/8
+step=44       FLUID p             : iter 001  resNorm0 4.81e-13  resNorm 2.39e-14
+step=44       FLUID U             : iter 001  resNorm0 1.09e-12  resNorm 3.24e-13
+step=44       FLUID divUErr       : 2.89e-16  7.04e-07
+step=44       t= 4.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=44       elapsedStep= 3.38e-02s  elapsedStepSum= 1.92922e+00s
+::
+step=45       proj FLUID p        : resNorm0 4.99e-12  resNorm 4.18e-13  ratio = 1.194e+01  8/8
+step=45       FLUID p             : iter 001  resNorm0 4.18e-13  resNorm 2.19e-14
+step=45       FLUID U             : iter 001  resNorm0 1.07e-12  resNorm 2.91e-13
+step=45       FLUID divUErr       : 3.00e-16  7.04e-07
+step=45       t= 4.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=45       elapsedStep= 3.26e-02s  elapsedStepSum= 1.96185e+00s
+::
+step=46       proj FLUID p        : resNorm0 4.80e-12  resNorm 6.67e-12  ratio = 7.192e-01  1/8
+step=46       FLUID p             : iter 001  resNorm0 6.67e-12  resNorm 3.06e-13
+step=46       FLUID U             : iter 001  resNorm0 1.00e-12  resNorm 2.58e-13
+step=46       FLUID divUErr       : 2.88e-16  7.04e-07
+step=46       t= 4.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=46       elapsedStep= 3.64e-02s  elapsedStepSum= 1.99823e+00s
+::
+step=47       proj FLUID p        : resNorm0 4.42e-12  resNorm 4.57e-12  ratio = 9.658e-01  2/8
+step=47       FLUID p             : iter 001  resNorm0 4.57e-12  resNorm 2.43e-13
+step=47       FLUID U             : iter 001  resNorm0 8.95e-13  resNorm 2.40e-13
+step=47       FLUID divUErr       : 3.03e-16  7.04e-07
+step=47       t= 4.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=47       elapsedStep= 2.67e-02s  elapsedStepSum= 2.02496e+00s
+::
+step=48       proj FLUID p        : resNorm0 4.06e-12  resNorm 9.17e-13  ratio = 4.425e+00  3/8
+step=48       FLUID p             : iter 001  resNorm0 9.17e-13  resNorm 4.95e-14
+step=48       FLUID U             : iter 001  resNorm0 8.29e-13  resNorm 2.27e-13
+step=48       FLUID divUErr       : 2.81e-16  7.04e-07
+step=48       t= 4.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=48       elapsedStep= 2.95e-02s  elapsedStepSum= 2.05450e+00s
+::
+step=49       proj FLUID p        : resNorm0 3.83e-12  resNorm 6.44e-13  ratio = 5.953e+00  4/8
+step=49       FLUID p             : iter 001  resNorm0 6.44e-13  resNorm 3.50e-14
+step=49       FLUID U             : iter 001  resNorm0 7.96e-13  resNorm 2.17e-13
+step=49       FLUID divUErr       : 3.03e-16  7.04e-07
+step=49       t= 4.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=49       elapsedStep= 3.30e-02s  elapsedStepSum= 2.08750e+00s
+::
+step=50       proj FLUID p        : resNorm0 3.71e-12  resNorm 8.67e-13  ratio = 4.278e+00  5/8
+step=50       FLUID p             : iter 001  resNorm0 8.67e-13  resNorm 2.64e-14
+step=50       FLUID U             : iter 001  resNorm0 7.53e-13  resNorm 2.26e-13
+step=50       FLUID divUErr       : 3.09e-16  7.04e-07
+step=50       t= 5.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=50       elapsedStep= 2.70e-02s  elapsedStepSum= 2.11446e+00s
+::
+step=51       proj FLUID p        : resNorm0 3.70e-12  resNorm 8.75e-13  ratio = 4.226e+00  6/8
+step=51       FLUID p             : iter 001  resNorm0 8.75e-13  resNorm 2.60e-14
+step=51       FLUID U             : iter 001  resNorm0 7.40e-13  resNorm 2.44e-13
+step=51       FLUID divUErr       : 2.82e-16  7.04e-07
+step=51       t= 5.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=51       elapsedStep= 3.73e-02s  elapsedStepSum= 2.15179e+00s
+::
+step=52       proj FLUID p        : resNorm0 3.83e-12  resNorm 3.98e-13  ratio = 9.620e+00  7/8
+step=52       FLUID p             : iter 001  resNorm0 3.98e-13  resNorm 2.09e-14
+step=52       FLUID U             : iter 001  resNorm0 7.86e-13  resNorm 2.46e-13
+step=52       FLUID divUErr       : 2.92e-16  7.04e-07
+step=52       t= 5.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=52       elapsedStep= 3.97e-02s  elapsedStepSum= 2.19151e+00s
+::
+step=53       proj FLUID p        : resNorm0 3.91e-12  resNorm 3.80e-13  ratio = 1.029e+01  8/8
+step=53       FLUID p             : iter 001  resNorm0 3.80e-13  resNorm 1.78e-14
+step=53       FLUID U             : iter 001  resNorm0 8.12e-13  resNorm 2.36e-13
+step=53       FLUID divUErr       : 3.25e-16  7.04e-07
+step=53       t= 5.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=53       elapsedStep= 3.83e-02s  elapsedStepSum= 2.22981e+00s
+::
+step=54       proj FLUID p        : resNorm0 3.79e-12  resNorm 5.65e-12  ratio = 6.710e-01  1/8
+step=54       FLUID p             : iter 001  resNorm0 5.65e-12  resNorm 2.63e-13
+step=54       FLUID U             : iter 001  resNorm0 7.81e-13  resNorm 2.25e-13
+step=54       FLUID divUErr       : 3.18e-16  7.04e-07
+step=54       t= 5.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=54       elapsedStep= 3.71e-02s  elapsedStepSum= 2.26690e+00s
+::
+step=55       proj FLUID p        : resNorm0 3.62e-12  resNorm 4.56e-12  ratio = 7.941e-01  2/8
+step=55       FLUID p             : iter 001  resNorm0 4.56e-12  resNorm 2.45e-13
+step=55       FLUID U             : iter 001  resNorm0 7.38e-13  resNorm 2.14e-13
+step=55       FLUID divUErr       : 3.14e-16  7.04e-07
+step=55       t= 5.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=55       elapsedStep= 3.76e-02s  elapsedStepSum= 2.30454e+00s
+::
+step=56       proj FLUID p        : resNorm0 3.46e-12  resNorm 8.74e-13  ratio = 3.954e+00  3/8
+step=56       FLUID p             : iter 001  resNorm0 8.74e-13  resNorm 3.95e-14
+step=56       FLUID U             : iter 001  resNorm0 7.05e-13  resNorm 2.07e-13
+step=56       FLUID divUErr       : 3.00e-16  7.04e-07
+step=56       t= 5.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=56       elapsedStep= 3.84e-02s  elapsedStepSum= 2.34289e+00s
+::
+step=57       proj FLUID p        : resNorm0 3.38e-12  resNorm 5.72e-13  ratio = 5.906e+00  4/8
+step=57       FLUID p             : iter 001  resNorm0 5.72e-13  resNorm 3.38e-14
+step=57       FLUID U             : iter 001  resNorm0 6.82e-13  resNorm 2.07e-13
+step=57       FLUID divUErr       : 3.05e-16  7.04e-07
+step=57       t= 5.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=57       elapsedStep= 3.83e-02s  elapsedStepSum= 2.38124e+00s
+::
+step=58       proj FLUID p        : resNorm0 3.36e-12  resNorm 8.28e-13  ratio = 4.061e+00  5/8
+step=58       FLUID p             : iter 001  resNorm0 8.28e-13  resNorm 2.32e-14
+step=58       FLUID U             : iter 001  resNorm0 6.78e-13  resNorm 2.08e-13
+step=58       FLUID divUErr       : 3.04e-16  7.04e-07
+step=58       t= 5.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=58       elapsedStep= 3.88e-02s  elapsedStepSum= 2.42007e+00s
+::
+step=59       proj FLUID p        : resNorm0 3.43e-12  resNorm 7.96e-13  ratio = 4.304e+00  6/8
+step=59       FLUID p             : iter 001  resNorm0 7.96e-13  resNorm 2.22e-14
+step=59       FLUID U             : iter 001  resNorm0 6.90e-13  resNorm 2.01e-13
+step=59       FLUID divUErr       : 3.07e-16  7.04e-07
+step=59       t= 5.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=59       elapsedStep= 3.93e-02s  elapsedStepSum= 2.45939e+00s
+::
+step=60       proj FLUID p        : resNorm0 3.40e-12  resNorm 3.24e-13  ratio = 1.050e+01  7/8
+step=60       FLUID p             : iter 001  resNorm0 3.24e-13  resNorm 1.92e-14
+step=60       FLUID U             : iter 001  resNorm0 6.84e-13  resNorm 1.94e-13
+step=60       FLUID divUErr       : 2.87e-16  7.04e-07
+step=60       t= 6.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=60       elapsedStep= 3.98e-02s  elapsedStepSum= 2.49917e+00s
+::
+step=61       proj FLUID p        : resNorm0 3.28e-12  resNorm 3.30e-13  ratio = 9.936e+00  8/8
+step=61       FLUID p             : iter 001  resNorm0 3.30e-13  resNorm 1.62e-14
+step=61       FLUID U             : iter 001  resNorm0 6.57e-13  resNorm 1.91e-13
+step=61       FLUID divUErr       : 2.98e-16  7.04e-07
+step=61       t= 6.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=61       elapsedStep= 3.79e-02s  elapsedStepSum= 2.53712e+00s
+::
+step=62       proj FLUID p        : resNorm0 3.18e-12  resNorm 5.38e-12  ratio = 5.917e-01  1/8
+step=62       FLUID p             : iter 001  resNorm0 5.38e-12  resNorm 2.73e-13
+step=62       FLUID U             : iter 001  resNorm0 6.33e-13  resNorm 1.96e-13
+step=62       FLUID divUErr       : 2.95e-16  7.04e-07
+step=62       t= 6.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=62       elapsedStep= 3.74e-02s  elapsedStepSum= 2.57449e+00s
+::
+step=63       proj FLUID p        : resNorm0 3.15e-12  resNorm 4.85e-12  ratio = 6.499e-01  2/8
+step=63       FLUID p             : iter 001  resNorm0 4.85e-12  resNorm 2.63e-13
+step=63       FLUID U             : iter 001  resNorm0 6.36e-13  resNorm 2.06e-13
+step=63       FLUID divUErr       : 2.93e-16  7.04e-07
+step=63       t= 6.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=63       elapsedStep= 3.74e-02s  elapsedStepSum= 2.61191e+00s
+::
+step=64       proj FLUID p        : resNorm0 3.24e-12  resNorm 8.91e-13  ratio = 3.632e+00  3/8
+step=64       FLUID p             : iter 001  resNorm0 8.91e-13  resNorm 4.68e-14
+step=64       FLUID U             : iter 001  resNorm0 6.62e-13  resNorm 2.17e-13
+step=64       FLUID divUErr       : 2.99e-16  7.04e-07
+step=64       t= 6.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=64       elapsedStep= 3.81e-02s  elapsedStepSum= 2.65002e+00s
+::
+step=65       proj FLUID p        : resNorm0 3.40e-12  resNorm 6.74e-13  ratio = 5.051e+00  4/8
+step=65       FLUID p             : iter 001  resNorm0 6.74e-13  resNorm 2.96e-14
+step=65       FLUID U             : iter 001  resNorm0 6.97e-13  resNorm 2.28e-13
+step=65       FLUID divUErr       : 3.16e-16  7.04e-07
+step=65       t= 6.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=65       elapsedStep= 3.84e-02s  elapsedStepSum= 2.68839e+00s
+::
+step=66       proj FLUID p        : resNorm0 3.58e-12  resNorm 1.03e-12  ratio = 3.488e+00  5/8
+step=66       FLUID p             : iter 001  resNorm0 1.03e-12  resNorm 2.25e-14
+step=66       FLUID U             : iter 001  resNorm0 7.29e-13  resNorm 2.35e-13
+step=66       FLUID divUErr       : 3.01e-16  7.04e-07
+step=66       t= 6.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=66       elapsedStep= 3.85e-02s  elapsedStepSum= 2.72687e+00s
+::
+step=67       proj FLUID p        : resNorm0 3.66e-12  resNorm 8.07e-13  ratio = 4.538e+00  6/8
+step=67       FLUID p             : iter 001  resNorm0 8.07e-13  resNorm 2.24e-14
+step=67       FLUID U             : iter 001  resNorm0 7.49e-13  resNorm 2.36e-13
+step=67       FLUID divUErr       : 2.92e-16  7.04e-07
+step=67       t= 6.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=67       elapsedStep= 3.93e-02s  elapsedStepSum= 2.76614e+00s
+::
+step=68       proj FLUID p        : resNorm0 3.61e-12  resNorm 3.23e-13  ratio = 1.117e+01  7/8
+step=68       FLUID p             : iter 001  resNorm0 3.23e-13  resNorm 1.54e-14
+step=68       FLUID U             : iter 001  resNorm0 7.50e-13  resNorm 2.25e-13
+step=68       FLUID divUErr       : 2.83e-16  7.04e-07
+step=68       t= 6.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=68       elapsedStep= 2.86e-02s  elapsedStepSum= 2.79473e+00s
+::
+step=69       proj FLUID p        : resNorm0 3.49e-12  resNorm 2.57e-13  ratio = 1.360e+01  8/8
+step=69       FLUID p             : iter 001  resNorm0 2.57e-13  resNorm 1.48e-14
+step=69       FLUID U             : iter 001  resNorm0 7.24e-13  resNorm 2.05e-13
+step=69       FLUID divUErr       : 3.14e-16  7.04e-07
+step=69       t= 6.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=69       elapsedStep= 2.31e-02s  elapsedStepSum= 2.81786e+00s
+::
+step=70       proj FLUID p        : resNorm0 3.32e-12  resNorm 5.85e-12  ratio = 5.688e-01  1/8
+step=70       FLUID p             : iter 001  resNorm0 5.85e-12  resNorm 3.03e-13
+step=70       FLUID U             : iter 001  resNorm0 6.74e-13  resNorm 1.85e-13
+step=70       FLUID divUErr       : 2.97e-16  7.04e-07
+step=70       t= 7.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=70       elapsedStep= 2.13e-02s  elapsedStepSum= 2.83921e+00s
+::
+step=71       proj FLUID p        : resNorm0 3.17e-12  resNorm 5.50e-12  ratio = 5.752e-01  2/8
+step=71       FLUID p             : iter 001  resNorm0 5.50e-12  resNorm 2.78e-13
+step=71       FLUID U             : iter 001  resNorm0 6.23e-13  resNorm 1.80e-13
+step=71       FLUID divUErr       : 3.09e-16  7.04e-07
+step=71       t= 7.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=71       elapsedStep= 2.65e-02s  elapsedStepSum= 2.86566e+00s
+::
+step=72       proj FLUID p        : resNorm0 3.10e-12  resNorm 8.31e-13  ratio = 3.724e+00  3/8
+step=72       FLUID p             : iter 001  resNorm0 8.31e-13  resNorm 4.34e-14
+step=72       FLUID U             : iter 001  resNorm0 6.04e-13  resNorm 1.96e-13
+step=72       FLUID divUErr       : 2.85e-16  7.04e-07
+step=72       t= 7.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=72       elapsedStep= 2.23e-02s  elapsedStepSum= 2.88800e+00s
+::
+step=73       proj FLUID p        : resNorm0 3.21e-12  resNorm 6.08e-13  ratio = 5.287e+00  4/8
+step=73       FLUID p             : iter 001  resNorm0 6.08e-13  resNorm 2.51e-14
+step=73       FLUID U             : iter 001  resNorm0 6.36e-13  resNorm 2.22e-13
+step=73       FLUID divUErr       : 3.06e-16  7.04e-07
+step=73       t= 7.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=73       elapsedStep= 2.42e-02s  elapsedStepSum= 2.91217e+00s
+::
+step=74       proj FLUID p        : resNorm0 3.45e-12  resNorm 1.12e-12  ratio = 3.096e+00  5/8
+step=74       FLUID p             : iter 001  resNorm0 1.12e-12  resNorm 2.51e-14
+step=74       FLUID U             : iter 001  resNorm0 7.06e-13  resNorm 2.44e-13
+step=74       FLUID divUErr       : 3.03e-16  7.04e-07
+step=74       t= 7.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=74       elapsedStep= 2.46e-02s  elapsedStepSum= 2.93675e+00s
+::
+step=75       proj FLUID p        : resNorm0 3.70e-12  resNorm 7.82e-13  ratio = 4.726e+00  6/8
+step=75       FLUID p             : iter 001  resNorm0 7.82e-13  resNorm 2.52e-14
+step=75       FLUID U             : iter 001  resNorm0 7.77e-13  resNorm 2.54e-13
+step=75       FLUID divUErr       : 2.95e-16  7.04e-07
+step=75       t= 7.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=75       elapsedStep= 2.46e-02s  elapsedStepSum= 2.96140e+00s
+::
+step=76       proj FLUID p        : resNorm0 3.83e-12  resNorm 2.98e-13  ratio = 1.285e+01  7/8
+step=76       FLUID p             : iter 001  resNorm0 2.98e-13  resNorm 1.57e-14
+step=76       FLUID U             : iter 001  resNorm0 8.13e-13  resNorm 2.49e-13
+step=76       FLUID divUErr       : 3.23e-16  7.04e-07
+step=76       t= 7.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=76       elapsedStep= 2.33e-02s  elapsedStepSum= 2.98473e+00s
+::
+step=77       proj FLUID p        : resNorm0 3.82e-12  resNorm 2.76e-13  ratio = 1.381e+01  8/8
+step=77       FLUID p             : iter 001  resNorm0 2.76e-13  resNorm 1.47e-14
+step=77       FLUID U             : iter 001  resNorm0 8.02e-13  resNorm 2.34e-13
+step=77       FLUID divUErr       : 3.17e-16  7.04e-07
+step=77       t= 7.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=77       elapsedStep= 2.71e-02s  elapsedStepSum= 3.01185e+00s
+::
+step=78       proj FLUID p        : resNorm0 3.70e-12  resNorm 6.43e-12  ratio = 5.749e-01  1/8
+step=78       FLUID p             : iter 001  resNorm0 6.43e-12  resNorm 3.23e-13
+step=78       FLUID U             : iter 001  resNorm0 7.56e-13  resNorm 2.19e-13
+step=78       FLUID divUErr       : 3.09e-16  7.04e-07
+step=78       t= 7.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=78       elapsedStep= 2.78e-02s  elapsedStepSum= 3.03960e+00s
+::
+step=79       proj FLUID p        : resNorm0 3.52e-12  resNorm 5.27e-12  ratio = 6.684e-01  2/8
+step=79       FLUID p             : iter 001  resNorm0 5.27e-12  resNorm 2.76e-13
+step=79       FLUID U             : iter 001  resNorm0 7.06e-13  resNorm 2.16e-13
+step=79       FLUID divUErr       : 3.06e-16  7.04e-07
+step=79       t= 7.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=79       elapsedStep= 2.66e-02s  elapsedStepSum= 3.06617e+00s
+::
+step=80       proj FLUID p        : resNorm0 3.44e-12  resNorm 7.23e-13  ratio = 4.757e+00  3/8
+step=80       FLUID p             : iter 001  resNorm0 7.23e-13  resNorm 3.52e-14
+step=80       FLUID U             : iter 001  resNorm0 6.92e-13  resNorm 2.27e-13
+step=80       FLUID divUErr       : 3.09e-16  7.04e-07
+step=80       t= 8.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=80       elapsedStep= 3.58e-02s  elapsedStepSum= 3.10195e+00s
+::
+step=81       proj FLUID p        : resNorm0 3.55e-12  resNorm 5.90e-13  ratio = 6.022e+00  4/8
+step=81       FLUID p             : iter 001  resNorm0 5.90e-13  resNorm 2.49e-14
+step=81       FLUID U             : iter 001  resNorm0 7.29e-13  resNorm 2.36e-13
+step=81       FLUID divUErr       : 3.03e-16  7.04e-07
+step=81       t= 8.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=81       elapsedStep= 3.78e-02s  elapsedStepSum= 3.13975e+00s
+::
+step=82       proj FLUID p        : resNorm0 3.71e-12  resNorm 1.17e-12  ratio = 3.155e+00  5/8
+step=82       FLUID p             : iter 001  resNorm0 1.17e-12  resNorm 2.80e-14
+step=82       FLUID U             : iter 001  resNorm0 7.76e-13  resNorm 2.34e-13
+step=82       FLUID divUErr       : 2.91e-16  7.04e-07
+step=82       t= 8.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=82       elapsedStep= 3.90e-02s  elapsedStepSum= 3.17879e+00s
+::
+step=83       proj FLUID p        : resNorm0 3.74e-12  resNorm 6.99e-13  ratio = 5.353e+00  6/8
+step=83       FLUID p             : iter 001  resNorm0 6.99e-13  resNorm 2.90e-14
+step=83       FLUID U             : iter 001  resNorm0 7.82e-13  resNorm 2.22e-13
+step=83       FLUID divUErr       : 3.01e-16  7.04e-07
+step=83       t= 8.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=83       elapsedStep= 3.94e-02s  elapsedStepSum= 3.21819e+00s
+::
+step=84       proj FLUID p        : resNorm0 3.61e-12  resNorm 2.78e-13  ratio = 1.299e+01  7/8
+step=84       FLUID p             : iter 001  resNorm0 2.78e-13  resNorm 1.49e-14
+step=84       FLUID U             : iter 001  resNorm0 7.42e-13  resNorm 2.12e-13
+step=84       FLUID divUErr       : 3.06e-16  7.04e-07
+step=84       t= 8.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=84       elapsedStep= 3.95e-02s  elapsedStepSum= 3.25768e+00s
+::
+step=85       proj FLUID p        : resNorm0 3.47e-12  resNorm 2.71e-13  ratio = 1.281e+01  8/8
+step=85       FLUID p             : iter 001  resNorm0 2.71e-13  resNorm 1.45e-14
+step=85       FLUID U             : iter 001  resNorm0 6.94e-13  resNorm 2.18e-13
+step=85       FLUID divUErr       : 3.17e-16  7.04e-07
+step=85       t= 8.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=85       elapsedStep= 3.85e-02s  elapsedStepSum= 3.29621e+00s
+::
+step=86       proj FLUID p        : resNorm0 3.47e-12  resNorm 5.56e-12  ratio = 6.227e-01  1/8
+step=86       FLUID p             : iter 001  resNorm0 5.56e-12  resNorm 2.79e-13
+step=86       FLUID U             : iter 001  resNorm0 6.95e-13  resNorm 2.43e-13
+step=86       FLUID divUErr       : 3.05e-16  7.04e-07
+step=86       t= 8.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=86       elapsedStep= 3.71e-02s  elapsedStepSum= 3.33331e+00s
+::
+step=87       proj FLUID p        : resNorm0 3.66e-12  resNorm 5.22e-12  ratio = 7.018e-01  2/8
+step=87       FLUID p             : iter 001  resNorm0 5.22e-12  resNorm 2.60e-13
+step=87       FLUID U             : iter 001  resNorm0 7.65e-13  resNorm 2.65e-13
+step=87       FLUID divUErr       : 2.94e-16  7.04e-07
+step=87       t= 8.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=87       elapsedStep= 3.70e-02s  elapsedStepSum= 3.37028e+00s
+::
+step=88       proj FLUID p        : resNorm0 3.98e-12  resNorm 5.75e-13  ratio = 6.916e+00  3/8
+step=88       FLUID p             : iter 001  resNorm0 5.75e-13  resNorm 3.45e-14
+step=88       FLUID U             : iter 001  resNorm0 8.50e-13  resNorm 2.71e-13
+step=88       FLUID divUErr       : 3.02e-16  7.04e-07
+step=88       t= 8.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=88       elapsedStep= 3.77e-02s  elapsedStepSum= 3.40796e+00s
+::
+step=89       proj FLUID p        : resNorm0 4.15e-12  resNorm 5.88e-13  ratio = 7.057e+00  4/8
+step=89       FLUID p             : iter 001  resNorm0 5.88e-13  resNorm 2.22e-14
+step=89       FLUID U             : iter 001  resNorm0 8.80e-13  resNorm 2.59e-13
+step=89       FLUID divUErr       : 2.96e-16  7.04e-07
+step=89       t= 8.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=89       elapsedStep= 3.82e-02s  elapsedStepSum= 3.44620e+00s
+::
+step=90       proj FLUID p        : resNorm0 4.07e-12  resNorm 9.83e-13  ratio = 4.144e+00  5/8
+step=90       FLUID p             : iter 001  resNorm0 9.83e-13  resNorm 2.24e-14
+step=90       FLUID U             : iter 001  resNorm0 8.48e-13  resNorm 2.36e-13
+step=90       FLUID divUErr       : 3.21e-16  7.04e-07
+step=90       t= 9.00000000e-02  dt=1.0e-03  CFL= 0.062
+step=90       elapsedStep= 3.90e-02s  elapsedStepSum= 3.48519e+00s
+::
+step=91       proj FLUID p        : resNorm0 3.85e-12  resNorm 6.06e-13  ratio = 6.351e+00  6/8
+step=91       FLUID p             : iter 001  resNorm0 6.06e-13  resNorm 2.53e-14
+step=91       FLUID U             : iter 001  resNorm0 7.80e-13  resNorm 2.12e-13
+step=91       FLUID divUErr       : 3.12e-16  7.04e-07
+step=91       t= 9.10000000e-02  dt=1.0e-03  CFL= 0.062
+step=91       elapsedStep= 3.89e-02s  elapsedStepSum= 3.52410e+00s
+::
+step=92       proj FLUID p        : resNorm0 3.57e-12  resNorm 2.56e-13  ratio = 1.394e+01  7/8
+step=92       FLUID p             : iter 001  resNorm0 2.56e-13  resNorm 1.19e-14
+step=92       FLUID U             : iter 001  resNorm0 7.09e-13  resNorm 1.98e-13
+step=92       FLUID divUErr       : 2.97e-16  7.04e-07
+step=92       t= 9.20000000e-02  dt=1.0e-03  CFL= 0.062
+step=92       elapsedStep= 3.94e-02s  elapsedStepSum= 3.56352e+00s
+::
+step=93       proj FLUID p        : resNorm0 3.36e-12  resNorm 2.36e-13  ratio = 1.425e+01  8/8
+step=93       FLUID p             : iter 001  resNorm0 2.36e-13  resNorm 1.23e-14
+step=93       FLUID U             : iter 001  resNorm0 6.67e-13  resNorm 2.02e-13
+step=93       FLUID divUErr       : 2.87e-16  7.04e-07
+step=93       t= 9.30000000e-02  dt=1.0e-03  CFL= 0.062
+step=93       elapsedStep= 3.84e-02s  elapsedStepSum= 3.60194e+00s
+::
+step=94       proj FLUID p        : resNorm0 3.34e-12  resNorm 5.31e-12  ratio = 6.293e-01  1/8
+step=94       FLUID p             : iter 001  resNorm0 5.31e-12  resNorm 2.55e-13
+step=94       FLUID U             : iter 001  resNorm0 6.74e-13  resNorm 2.20e-13
+step=94       FLUID divUErr       : 2.95e-16  7.04e-07
+step=94       t= 9.40000000e-02  dt=1.0e-03  CFL= 0.062
+step=94       elapsedStep= 3.69e-02s  elapsedStepSum= 3.63883e+00s
+::
+step=95       proj FLUID p        : resNorm0 3.52e-12  resNorm 4.94e-12  ratio = 7.131e-01  2/8
+step=95       FLUID p             : iter 001  resNorm0 4.94e-12  resNorm 2.50e-13
+step=95       FLUID U             : iter 001  resNorm0 7.23e-13  resNorm 2.43e-13
+step=95       FLUID divUErr       : 2.95e-16  7.04e-07
+step=95       t= 9.50000000e-02  dt=1.0e-03  CFL= 0.062
+step=95       elapsedStep= 3.76e-02s  elapsedStepSum= 3.67641e+00s
+::
+step=96       proj FLUID p        : resNorm0 3.81e-12  resNorm 4.95e-13  ratio = 7.697e+00  3/8
+step=96       FLUID p             : iter 001  resNorm0 4.95e-13  resNorm 3.57e-14
+step=96       FLUID U             : iter 001  resNorm0 7.93e-13  resNorm 2.63e-13
+step=96       FLUID divUErr       : 3.07e-16  7.04e-07
+step=96       t= 9.60000000e-02  dt=1.0e-03  CFL= 0.062
+step=96       elapsedStep= 3.78e-02s  elapsedStepSum= 3.71424e+00s
+::
+step=97       proj FLUID p        : resNorm0 4.11e-12  resNorm 5.16e-13  ratio = 7.960e+00  4/8
+step=97       FLUID p             : iter 001  resNorm0 5.16e-13  resNorm 2.15e-14
+step=97       FLUID U             : iter 001  resNorm0 8.56e-13  resNorm 2.69e-13
+step=97       FLUID divUErr       : 3.05e-16  7.04e-07
+step=97       t= 9.70000000e-02  dt=1.0e-03  CFL= 0.062
+step=97       elapsedStep= 3.80e-02s  elapsedStepSum= 3.75228e+00s
+::
+step=98       proj FLUID p        : resNorm0 4.19e-12  resNorm 9.74e-13  ratio = 4.307e+00  5/8
+step=98       FLUID p             : iter 001  resNorm0 9.74e-13  resNorm 2.01e-14
+step=98       FLUID U             : iter 001  resNorm0 8.80e-13  resNorm 2.56e-13
+step=98       FLUID divUErr       : 3.18e-16  7.04e-07
+step=98       t= 9.80000000e-02  dt=1.0e-03  CFL= 0.062
+step=98       elapsedStep= 3.84e-02s  elapsedStepSum= 3.79064e+00s
+::
+step=99       proj FLUID p        : resNorm0 4.07e-12  resNorm 5.92e-13  ratio = 6.874e+00  6/8
+step=99       FLUID p             : iter 001  resNorm0 5.92e-13  resNorm 2.15e-14
+step=99       FLUID U             : iter 001  resNorm0 8.44e-13  resNorm 2.30e-13
+step=99       FLUID divUErr       : 3.04e-16  7.04e-07
+step=99       t= 9.90000000e-02  dt=1.0e-03  CFL= 0.062
+step=99       elapsedStep= 3.91e-02s  elapsedStepSum= 3.82972e+00s
+::
+step=100      proj FLUID p        : resNorm0 3.78e-12  resNorm 2.61e-13  ratio = 1.447e+01  7/8
+step=100      FLUID p             : iter 001  resNorm0 2.61e-13  resNorm 1.39e-14
+step=100      FLUID U             : iter 001  resNorm0 7.63e-13  resNorm 2.09e-13
+step=100      FLUID divUErr       : 3.25e-16  7.04e-07
+step=100      t= 1.00000000e-01  dt=1.0e-03  CFL= 0.062
+step=100      elapsedStep= 3.85e-02s  elapsedStepSum= 3.86821e+00s
+::
+
+>>> runtime statistics (step= 100  totalElapsed= 8.08062s):
+name                    time          abs%  rel%  calls
+  solve                 3.86821e+00s  100.0      
+    min                 2.13498e-02s
+    max                 1.50343e-01s
+    flops/rank          1.98120e+09
+    udfExecuteStep      2.63400e-04s   0.0        100
+    makef               6.74422e-02s   1.7        100
+    udfProperties       3.63850e-03s   0.1        101
+    velocitySolve       1.28897e+00s  33.3        100
+      rhs               2.50811e-01s   6.5  19.5  100
+      preconditioner    3.55479e-02s   0.9   2.8  259
+    pressureSolve       2.16233e+00s  55.9        100
+      rhs               6.18942e-01s  16.0  28.6  100
+      preconditioner    1.09299e+00s  28.3  50.5  103
+        pMG smoother    8.65109e-01s  22.4  79.2  206
+        pMG smoother    1.37901e-01s   3.6  12.6  206
+        coarse grid     8.08500e-03s   0.2   0.7  103
+      initial guess     2.71382e-01s   7.0  12.6  100
+
+occa max memory usage:     36502830 bytes
+  deviceMemoryPool:         6188800 bytes
+  mempool:                   393216 bytes
+
+
+finished with exit code 0
