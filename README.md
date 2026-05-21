@@ -7,6 +7,26 @@
 (c) 2019-2025 UCHICAGO ARGONNE, LLC
 ```
 
+# NekRSW
+
+The Native Windows implementation of NekRS. 
+
+Basically same computational efficiency as original version. Case fully compatable (no need to modify any files of your case, just use your favourate commands in Windows terminal).
+Support CUDA. Also support OpenCL but not fully tested.
+
+The platform adaptation is by Huanxia Wei, not by the Nek team.
+Therefore, do not disturb original NekRS team for the adaptation bugs of NekRSW.
+For new features, functions or new debugs from Nek5000 original repo, if you need an update to obtain them, let me know.
+
+Currently, only suggest to use this windows version for demo cases. When large cases with elements higher than 43k (for 8th order. Lower order can run more), some problem presents and makenek crashes. Caused by 2GB+ single array is not supported by windows fortran in the Nek5000W as requiring pack.
+It is a big project to modify the kernal and solve this basic-layer problem while maintain computational efficiency. I might have time to work out this in the future, but who knows. Nobody pays me, and this repo is not a part of my Phd research, only a hobby to code.
+
+Enjoy your colorful funny drawings, ha.
+
+See windows version of Nek5000 in my another repo.
+
+_____________________________________________________________________________________________________________________________________
+
 [![Build Status](https://travis-ci.com/Nek5000/nekRS.svg?branch=master)](https://travis-ci.com/Nek5000/nekRS)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-orange.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
