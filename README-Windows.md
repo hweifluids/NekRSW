@@ -26,6 +26,10 @@ cd C:\1_Development\nekRSW
 powershell -ExecutionPolicy Bypass -File .\windows\build-msmpi.ps1 -Clean
 ```
 
+The Windows build script uses the Windows-adapted Nek5000 tree at
+`C:\1_Development\Nek5000W` by default. Override it with `-Nek5000SourceDir`
+if you need to test another Nek5000 source tree.
+
 CUDA build, installed separately so the CPU build remains available:
 
 ```powershell
@@ -43,7 +47,8 @@ powershell -ExecutionPolicy Bypass -File .\windows\build-msmpi.ps1 `
   -MpiIncludeDir 'C:\Program Files (x86)\Microsoft SDKs\MPI\Include' `
   -MpiFortranIncludeDir 'C:\Program Files (x86)\Microsoft SDKs\MPI\Include\x64' `
   -MpiLibraryDir 'C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64' `
-  -MpiExec 'C:\Program Files\Microsoft MPI\Bin\mpiexec.exe'
+  -MpiExec 'C:\Program Files\Microsoft MPI\Bin\mpiexec.exe' `
+  -Nek5000SourceDir 'C:\1_Development\Nek5000W'
 ```
 
 CUDA-specific variables:

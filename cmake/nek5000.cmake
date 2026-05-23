@@ -1,4 +1,5 @@
 set(NEK5000_PPLIST "PARRSB DPROCMAP" CACHE STRING "Preprocessor macros for Nek5000")
+set(NEK5000_SOURCE_DIR "" CACHE PATH "Path to Nek5000 source tree. Empty uses the bundled 3rd_party/nek5000 copy.")
 
 function(add_nek5000)
 
@@ -21,8 +22,15 @@ if (${NEK5000_PPLIST} MATCHES "PARRSB")
   set(USE_PARRSB on)
 endif()
 
-if(WIN32)
+if(NOT NEK5000_SOURCE_DIR)
   set(NEK5000_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/nek5000)
+endif()
+get_filename_component(NEK5000_SOURCE_DIR "${NEK5000_SOURCE_DIR}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+if(NOT EXISTS "${NEK5000_SOURCE_DIR}/core")
+  message(FATAL_ERROR "NEK5000_SOURCE_DIR must point to a Nek5000 source tree with a core directory: ${NEK5000_SOURCE_DIR}")
+endif()
+
+if(WIN32)
   set(NEK5000_WIN_TEMPLATE_DIR ${CMAKE_CURRENT_BINARY_DIR}/nek5000_win)
   file(MAKE_DIRECTORY ${NEK5000_WIN_TEMPLATE_DIR})
   file(WRITE ${NEK5000_WIN_TEMPLATE_DIR}/makefile.template
@@ -30,9 +38,12 @@ if(WIN32)
 # This file is installed only to satisfy existing NekRS runtime layout.
 ")
 
-  install(DIRECTORY ${NEK5000_SOURCE_DIR}/core DESTINATION nek5000
+  install(DIRECTORY "${NEK5000_SOURCE_DIR}/core" DESTINATION nek5000
     PATTERN "*"
     PATTERN "mkuserfile" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  if(EXISTS "${NEK5000_SOURCE_DIR}/windows")
+    install(DIRECTORY "${NEK5000_SOURCE_DIR}/windows" DESTINATION nek5000)
+  endif()
   install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/nek5000_parRSB/src/
     DESTINATION nek5000/3rd_party/parRSB/src
     FILES_MATCHING
@@ -52,7 +63,7 @@ endif()
   # Since Nek5000 is compiled in-source, we copy it to the build 
 FetchContent_Declare(
   nek5000_content
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/nek5000)
+  URL "${NEK5000_SOURCE_DIR}")
 FetchContent_GetProperties(nek5000_content)
 if (NOT nek5000_content_POPULATED)
   FetchContent_MakeAvailable(nek5000_content)

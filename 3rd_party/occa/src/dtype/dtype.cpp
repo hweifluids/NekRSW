@@ -331,7 +331,9 @@ namespace occa {
 
     // Anything can be casted from/to bytes
     if ((&from == &dtype::byte) ||
-        (&to == &dtype::byte)) {
+        (&to == &dtype::byte) ||
+        (from.name() == dtype::byte.name()) ||
+        (to.name() == dtype::byte.name())) {
       return true;
     }
 
@@ -359,7 +361,8 @@ namespace occa {
     }
 
     for (int i = 0; i < entries; ++i) {
-      if (fromVec[i] != toVec[i]) {
+      if (fromVec[i] != toVec[i] &&
+          fromVec[i]->name() != toVec[i]->name()) {
         return false;
       }
     }
@@ -379,7 +382,8 @@ namespace occa {
       const dtype_t &dtype = *(vec[i]);
       for (int c = 1; c < cycles; ++c) {
         const dtype_t &dtype2 = *(vec[i + (c * cycleLength)]);
-        if (dtype != dtype2) {
+        if (dtype != dtype2 &&
+            dtype.name() != dtype2.name()) {
           return false;
         }
       }

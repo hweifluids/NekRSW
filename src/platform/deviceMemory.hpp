@@ -33,18 +33,17 @@ public:
 
   explicit deviceMemory(const occa::memory &occa_memory) : occa_memory_{occa_memory}
   {
-    if (occa_memory_.byte_size() && occa_memory_.dtype() != occa::dtype::get<T>()) {
-      throw std::runtime_error("data type does not match");
-    }
+    ensureCompatibleDtype();
   }
 
-  explicit deviceMemory(occa::memory &&occa_memory) noexcept : occa_memory_{std::move(occa_memory)} {}
+  explicit deviceMemory(occa::memory &&occa_memory) : occa_memory_{std::move(occa_memory)}
+  {
+    ensureCompatibleDtype();
+  }
 
   deviceMemory(const deviceMemory &other) : occa_memory_{other.occa_memory_}
   {
-    if (occa_memory_.byte_size() && occa_memory_.dtype() != occa::dtype::get<T>()) {
-      throw std::runtime_error("data type does not match");
-    }
+    ensureCompatibleDtype();
   }
 
   deviceMemory(deviceMemory &&other) noexcept : occa_memory_{std::move(other.occa_memory_)} {}
@@ -179,30 +178,40 @@ public:
 
   void copyFrom(const occa::memory &src, size_type count, size_type dest_offset = 0, size_type src_offset = 0)
   {
-    const auto srcType  = src.dtype();
+    occa::memory srcMem = src;
+    markUntypedMemoryAsExpected(srcMem);
+    markUntypedMemoryAsExpected(occa_memory_);
+
+    const auto srcType  = srcMem.dtype();
     const auto destType = occa_memory_.dtype();
- 
+    auto srcSlice = srcMem.slice(src_offset);
+    auto destSlice = occa_memory_.slice(dest_offset);
+    markUntypedMemoryAsExpected(srcSlice);
+    markUntypedMemoryAsExpected(destSlice);
+  
     // Handle special float <-> double conversions
-    if (srcType == occa::dtype::get<double>() && destType == occa::dtype::get<float>()) {
+    if (srcType.name() == occa::dtype::get<double>().name() &&
+        destType.name() == occa::dtype::get<float>().name()) {
       platform->copyDoubleToFloatKernel(
         static_cast<dlong>(count),
-        src.slice(src_offset),
-        occa_memory_.slice(dest_offset)
+        srcSlice,
+        destSlice
       );
       return;
     }
- 
-    if (srcType == occa::dtype::get<float>() && destType == occa::dtype::get<double>()) {
+  
+    if (srcType.name() == occa::dtype::get<float>().name() &&
+        destType.name() == occa::dtype::get<double>().name()) {
       platform->copyFloatToDoubleKernel(
         static_cast<dlong>(count),
-        src.slice(src_offset),
-        occa_memory_.slice(dest_offset)
+        srcSlice,
+        destSlice
       );
       return;
     }
- 
+  
     // Default case: direct copy
-    occa_memory_.copyFrom(src.slice(src_offset), count, dest_offset);
+    destSlice.copyFrom(srcSlice, count);
   }
 
   void copyFrom(const occa::memory &src)
@@ -236,30 +245,40 @@ public:
 
   void copyTo(occa::memory &dest, size_type count, size_type src_offset = 0, size_type dest_offset = 0) const
   {
-    const auto srcType  = occa_memory_.dtype();
+    auto srcMem = occa_memory_;
+    markUntypedMemoryAsExpected(srcMem);
+    markUntypedMemoryAsExpected(dest);
+
+    const auto srcType  = srcMem.dtype();
     const auto destType = dest.dtype();
- 
+    auto srcSlice = srcMem.slice(src_offset);
+    auto destSlice = dest.slice(dest_offset);
+    markUntypedMemoryAsExpected(srcSlice);
+    markUntypedMemoryAsExpected(destSlice);
+  
     // Handle special float <-> double cases
-    if (srcType == occa::dtype::get<double>() && destType == occa::dtype::get<float>()) {
+    if (srcType.name() == occa::dtype::get<double>().name() &&
+        destType.name() == occa::dtype::get<float>().name()) {
       platform->copyDoubleToFloatKernel(
         static_cast<dlong>(count),
-        occa_memory_.slice(src_offset),
-        dest.slice(dest_offset)
+        srcSlice,
+        destSlice
       );
       return;
     }
- 
-    if (srcType == occa::dtype::get<float>() && destType == occa::dtype::get<double>()) {
+  
+    if (srcType.name() == occa::dtype::get<float>().name() &&
+        destType.name() == occa::dtype::get<double>().name()) {
       platform->copyFloatToDoubleKernel(
         static_cast<dlong>(count),
-        occa_memory_.slice(src_offset),
-        dest.slice(dest_offset)
+        srcSlice,
+        destSlice
       );
       return;
     }
- 
+  
     // Default case: straight copy
-    occa_memory_.copyTo(dest.slice(dest_offset), count, src_offset);
+    srcSlice.copyTo(destSlice, count);
   }
 
   void copyTo(occa::memory &dest) const
@@ -268,6 +287,42 @@ public:
   }
 
 private:
+  static void markUntypedMemoryAsExpected(occa::memory &memory)
+  {
+    if (!memory.byte_size()) {
+      return;
+    }
+
+    const auto currentType = memory.dtype();
+    if ((currentType.name() == occa::dtype::none.name() || currentType.name() == occa::dtype::byte.name()) &&
+        memory.byte_size() % sizeof(T) == 0) {
+      memory.setDtype(occa::dtype::get<T>());
+    }
+  }
+
+  void ensureCompatibleDtype()
+  {
+    if (!occa_memory_.byte_size()) {
+      return;
+    }
+
+    const auto expectedType = occa::dtype::get<T>();
+    const auto currentType = occa_memory_.dtype();
+    if (currentType == expectedType || currentType.name() == expectedType.name()) {
+      return;
+    }
+
+    if ((currentType.name() == occa::dtype::none.name() || currentType.name() == occa::dtype::byte.name()) &&
+        occa_memory_.byte_size() % sizeof(T) == 0) {
+      occa_memory_.setDtype(expectedType);
+      return;
+    }
+
+    throw std::runtime_error("data type does not match: expected " + expectedType.name() +
+                             ", got " + currentType.name() +
+                             ", bytes=" + std::to_string(occa_memory_.byte_size()));
+  }
+
   occa::memory occa_memory_;
 };
 

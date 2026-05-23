@@ -270,7 +270,8 @@ public:
     validateUserFields(name);
 
     for (const auto &v : u) {
-      nekrsCheck(v.dtype() != occa::dtype::get<float>() && v.dtype() != occa::dtype::get<double>(),
+      const auto dtypeName = v.dtype().name();
+      nekrsCheck(dtypeName != occa::dtype::get<float>().name() && dtypeName != occa::dtype::get<double>().name(),
                  MPI_COMM_SELF,
                  EXIT_FAILURE,
                  "%s!\n",

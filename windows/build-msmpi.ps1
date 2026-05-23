@@ -10,6 +10,7 @@ param(
     [string]$MpiFortranIncludeDir,
     [string]$MpiLibraryDir,
     [string]$MpiExec,
+    [string]$Nek5000SourceDir = 'C:\1_Development\Nek5000W',
     [switch]$Cuda,
     [string]$CudaToolkitRoot = $env:CUDA_PATH,
     [string]$CudaArch,
@@ -46,6 +47,12 @@ foreach ($path in @($SourceDir, $MpiIncludeDir, $MpiFortranIncludeDir, $MpiLibra
         throw "Required path was not found: $path"
     }
 }
+if ($Nek5000SourceDir) {
+    if (-not (Test-Path -LiteralPath (Join-Path $Nek5000SourceDir 'core'))) {
+        throw "Nek5000 source tree was not found or has no core directory: $Nek5000SourceDir"
+    }
+    $Nek5000SourceDir = (Resolve-Path -LiteralPath $Nek5000SourceDir).Path
+}
 if ($Cuda) {
     $nvcc = Join-Path $CudaToolkitRoot 'bin\nvcc.exe'
     if (-not (Test-Path -LiteralPath $nvcc)) {
@@ -76,6 +83,7 @@ $mpiFInc = (($MpiIncludeDir -replace '\\', '/'), ($MpiFortranIncludeDir -replace
 $source = $SourceDir -replace '\\', '/'
 $build = $BuildDir -replace '\\', '/'
 $install = $InstallDir -replace '\\', '/'
+$nek5000Source = $Nek5000SourceDir -replace '\\', '/'
 $cudaRoot = if ($Cuda) { $CudaToolkitRoot -replace '\\', '/' } else { '' }
 $occaCuda = if ($Cuda) { 'ON' } else { 'OFF' }
 $cudaCompilerFlags = '-w -O3 -lineinfo --use_fast_math'
@@ -102,6 +110,7 @@ $cmakeArgs = @(
     '-DENABLE_HYPRE_GPU=OFF',
     '-DNEKRS_BUILD_FLOAT=OFF',
     '-DMAX_NUM_KERNEL_ARGS=120',
+    "-DNEK5000_SOURCE_DIR=`"$nek5000Source`"",
     "-DMPI_C_INCLUDE_DIRS=`"$mpiInc`"",
     "-DMPI_CXX_INCLUDE_DIRS=`"$mpiInc`"",
     "-DMPI_Fortran_INCLUDE_DIRS=`"$mpiFInc`"",

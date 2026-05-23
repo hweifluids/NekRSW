@@ -95,6 +95,7 @@ c-----------------------------------------------------------------------
       call nekrs_registerPtr('wz', wz)
 
       call nekrs_registerPtr('time', time)
+      call nekrs_registerPtr('dt', dt)
       call nekrs_registerPtr('p0th', p0th)
 
       call nekrs_registerPtr('vmult', vmult)

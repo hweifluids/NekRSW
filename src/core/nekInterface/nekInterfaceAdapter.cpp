@@ -916,7 +916,14 @@ void mkSIZE(int lx1,
       if (line.find("lelt=") != std::string::npos) {
         int oldval;
         sscanf(line.c_str(), "%*[^=]=%d", &oldval);
-        if (oldval < lelt) {
+        if (oldval != lelt) {
+          writeSize = 1;
+        }
+      }
+      if (line.find("lpmin=") != std::string::npos) {
+        int oldval;
+        sscanf(line.c_str(), "%*[^=]=%d", &oldval);
+        if (oldval != lpmin) {
           writeSize = 1;
         }
       }
@@ -1034,13 +1041,10 @@ void buildNekInterface(int ldimt, int N, int np, setupAide &options)
         }
       }
       
+      // Size Nek's static arrays for the largest local partition. The
+      // Windows-native map still uses contiguous MPI blocks, and using nelgt
+      // here can exceed the NTCOFF 2GB section limit for large meshes.
       int lelt = (nelgt / np) + 3 + hRefineImbalance;
-#ifdef _WIN32
-    // The Windows-native Nek5000 interface uses a contiguous MPI partition to
-    // avoid MS-MPI redistribution issues, while keeping room for small mesh
-    // imbalance and h-refinement.
-    lelt = nelgt + (hRefineImbalance > 0 ? 1 : 0);
-#endif
 
       if (lelt > nelgt) {
         lelt = nelgt + 1; // preserve 1-extra in h-refine

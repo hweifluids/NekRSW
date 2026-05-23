@@ -192,53 +192,110 @@ Add-StubIfMissing $builder $usrText 'userqtl' @'
 '@
 Set-Content -LiteralPath $UsrGenerated -Value $builder.ToString() -NoNewline -Encoding ASCII
 
-$template = Get-Content -LiteralPath (Join-Path $CoreDir 'makefile.template')
 $coreObjects = New-Object System.Collections.Generic.List[string]
-$collectCore = $false
-foreach ($line in $template) {
-    $work = $line
-    if (-not $collectCore -and $work -match '^\s*CORE\s*=') {
-        $collectCore = $true
-        $work = $work -replace '^\s*CORE\s*=\s*', ''
-    } elseif (-not $collectCore) {
-        continue
-    }
+$sourceByObject = @{}
 
-    $continues = $work.TrimEnd().EndsWith('\')
-    $work = $work.Replace('\', ' ')
-    foreach ($token in ($work -split '\s+')) {
-        if ($token -match '\.o$') {
-            $coreObjects.Add($token)
+function Add-CoreObjectSource([string]$ObjectName, [string]$SourcePath) {
+    if (-not $coreObjects.Contains($ObjectName)) {
+        $coreObjects.Add($ObjectName)
+    }
+    $sourceByObject[$ObjectName] = $SourcePath
+}
+
+function Add-DefaultCoreObjectSource([string]$ObjectName, [string]$RelativeSource) {
+    if (-not $sourceByObject.ContainsKey($ObjectName)) {
+        Add-CoreObjectSource $ObjectName (Join-Path $CoreDir $RelativeSource)
+    } elseif (-not $coreObjects.Contains($ObjectName)) {
+        $coreObjects.Add($ObjectName)
+    }
+}
+
+$templatePath = Join-Path $CoreDir 'makefile.template'
+if (Test-Path -LiteralPath $templatePath) {
+    $template = Get-Content -LiteralPath $templatePath
+    $collectCore = $false
+    foreach ($line in $template) {
+        $work = $line
+        if (-not $collectCore -and $work -match '^\s*CORE\s*=') {
+            $collectCore = $true
+            $work = $work -replace '^\s*CORE\s*=\s*', ''
+        } elseif (-not $collectCore) {
+            continue
+        }
+
+        $continues = $work.TrimEnd().EndsWith('\')
+        $work = $work.Replace('\', ' ')
+        foreach ($token in ($work -split '\s+')) {
+            if ($token -match '\.o$') {
+                $coreObjects.Add($token)
+            }
+        }
+        if (-not $continues) {
+            break
         }
     }
-    if (-not $continues) {
-        break
+
+    foreach ($line in $template) {
+        if ($line -match '^\$\(OBJDIR\)/([^\s:]+)\s*:\s*([^;]+);') {
+            $obj = $matches[1]
+            $dep = ($matches[2].Trim() -split '\s+')[0]
+            $dep = $dep.Replace('$S', $Nek5000Dir)
+            $sourceByObject[$obj] = $dep
+        }
+    }
+} else {
+    Write-Host "Nek5000 core makefile.template not found; using Windows Nek5000 source list."
+    $fortranCore = @(
+        'drive1.f', 'drive2.f', 'comm_mpi.f', 'plan5.f', 'plan4.f', 'bdry.f', 'coef.f',
+        'conduct.f', 'connect1.f', 'connect2.f', 'dssum.f', 'eigsolv.f',
+        'gauss.f', 'genxyz.f', 'navier1.f', 'makeq.f', 'navier0.f',
+        'navier2.f', 'navier3.f', 'navier4.f', 'prepost.f', 'speclib.f',
+        'map2.f', 'mvmesh.f', 'ic.f', 'gfldr.f', 'ssolv.f', 'planx.f',
+        'hmholtz.f', 'subs1.f', 'subs2.f', 'gmres.f', 'hsmg.f', 'convect.f',
+        'convect2.f', 'induct.f', 'perturb.f', 'navier5.f', 'navier6.f', 'navier7.f',
+        'navier8.f', 'fast3d.f', 'fasts.f', 'calcz.f', 'byte_mpi.f',
+        'postpro.f', 'interp.f', 'cvode_driver.f', 'multimesh.f', 'vprops.f',
+        'makeq_aux.f', 'papi.f', 'hpf.f', 'hrefine.f',
+        'reader_rea.f', 'reader_par.f', 'reader_re2.f', 'math.f', 'dprocmap.f',
+        'mxm_wrapper.f', 'mxm_std.f', '3rd_party\nek_in_situ.f'
+    )
+    $cCore = @(
+        'byte.c',
+        'fcrs.c',
+        'crs_xxt.c',
+        'crs_amg.c',
+        'experimental\fem_amg_preco.c',
+        'experimental\crs_hypre.c',
+        'partitioner.c',
+        'nekio.c',
+        '3rd_party\finiparser.c',
+        '3rd_party\iniparser.c',
+        '3rd_party\dictionary.c'
+    )
+    foreach ($rel in ($fortranCore + $cCore)) {
+        $obj = ([IO.Path]::GetFileNameWithoutExtension($rel) + '.o')
+        Add-CoreObjectSource $obj (Join-Path $CoreDir $rel)
     }
 }
-if (-not $coreObjects.Contains('dprocmap.o')) {
-    $coreObjects.Add('dprocmap.o')
-}
-if (-not $coreObjects.Contains('mxm_std.o')) {
-    $coreObjects.Add('mxm_std.o')
-}
-$coreObjects.Add('comm_mpi.o')
 
-$sourceByObject = @{}
-foreach ($line in $template) {
-    if ($line -match '^\$\(OBJDIR\)/([^\s:]+)\s*:\s*([^;]+);') {
-        $obj = $matches[1]
-        $dep = ($matches[2].Trim() -split '\s+')[0]
-        $dep = $dep.Replace('$S', $Nek5000Dir)
-        $sourceByObject[$obj] = $dep
-    }
+$winHelpersSource = Join-Path $Nek5000Dir 'windows\chelpers_win.c'
+if (Test-Path -LiteralPath $winHelpersSource) {
+    Add-CoreObjectSource 'chelpers.o' $winHelpersSource
+} else {
+    Add-DefaultCoreObjectSource 'chelpers.o' 'chelpers.c'
 }
+Add-DefaultCoreObjectSource 'dprocmap.o' 'dprocmap.f'
+Add-DefaultCoreObjectSource 'mxm_std.o' 'mxm_std.f'
+Add-DefaultCoreObjectSource 'comm_mpi.o' 'comm_mpi.f'
 
+$Nek5000WindowsDir = Join-Path $Nek5000Dir 'windows'
 $includeDirs = @(
     $CacheDir,
     $ObjDir,
     $CaseDir,
     $CoreDir,
     (Join-Path $CoreDir 'experimental'),
+    $Nek5000WindowsDir,
     (Join-Path $InstallDir 'include\core\bdry'),
     (Join-Path $InstallDir 'gslib\include'),
     $ParRsbSrcDir,
@@ -256,10 +313,19 @@ $fortranBase = @(
     '/real-size:64',
     '/names:lowercase',
     '/assume:underscore',
+    '/DMPI',
+    '/DTIMER',
     '/DPARRSB',
     '/DDPROCMAP',
     '/DNEKRS_WINDOWS_CONTIGUOUS_MAP'
 ) + $fortranIncludes
+
+$fortranName = [IO.Path]::GetFileNameWithoutExtension($FortranCompiler)
+if ($fortranName -match '^(ifx|ifort)$') {
+    $dynamicCommonBlocks = 'vptsol,gmre1,gmre2,gmres,spltprec,gxyz,giso1,giso2,gisod,gmfact,gsurf,gvolm,mass,solnd,bqcb,vptmsk,cbm2,diverg,input5,input6,input8,input9,inputmi,cbout_mask'
+    $fortranBase += "/Qdyncom`"$dynamicCommonBlocks`""
+    Write-Host "Dynamic COMMON: $dynamicCommonBlocks"
+}
 
 $cBase = @(
     '/nologo',
@@ -269,7 +335,10 @@ $cBase = @(
     '/std:c11',
     '/D_CRT_SECURE_NO_WARNINGS',
     '/DWIN32',
+    '/D_WINDOWS',
     '/DMPI',
+    '/DTIMER',
+    '/DCOMM_H',
     '/DUNDERSCORE',
     '/DPARRSB',
     '/DPARRSB_MPI',
@@ -303,7 +372,7 @@ foreach ($objName in $coreObjects) {
     if ($ext -eq '.c') {
         Invoke-Checked $CCompiler ($cBase + @("/Fo$obj", $src))
     } else {
-        $optFlag = if ($objName -eq 'prepost.o' -or $objName -eq 'convect2.o') { '/Od' } else { '/O2' }
+        $optFlag = if ($objName -eq 'prepost.o' -or $objName -eq 'convect2.o') { '/Od' } elseif ($objName -eq 'math.o') { '/O3' } else { '/O2' }
         Invoke-Checked $FortranCompiler ($fortranBase + @($optFlag, "/object:$obj", $src))
     }
     $objects.Add($obj)
@@ -375,6 +444,7 @@ foreach ($lib in @(
     }
 }
 $linkInputs += 'Ws2_32.lib'
+$linkInputs += 'Psapi.lib'
 
 Invoke-Checked $FortranCompiler (@('/nologo', '/dll', "/Fe:$libFile") + $linkInputs + @('/link', "/DEF:$defFile", '/INCREMENTAL:NO'))
 
