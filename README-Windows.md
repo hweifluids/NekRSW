@@ -116,6 +116,27 @@ Get-Content .\logfile
 Get-Content (Get-Content .\logfile) -Wait
 ```
 
+On Windows systems with more than 64 logical processors, `nrsmpi.cmd` and
+`nrsbmpi.cmd` automatically start a small affinity helper for runs above 64 MPI
+tasks. MS-MPI's built-in affinity layout can fail on these processor-group
+systems, so the helper pins NekRS rank threads after launch. It uses Windows
+processor topology when available, placing one rank on each physical core before
+using sibling hardware threads.
+
+Useful controls:
+
+```cmd
+set NEKRS_WIN_PIN_GROUPS=0
+set NEKRS_AFFINITY_LOG=C:\path\to\nekrs.affinity.log
+set NEKRS_WIN_PIN_WAIT_SECONDS=600
+set NEKRS_WIN_PIN_PASSES=0
+set NEKRS_WIN_PIN_DELAY_SECONDS=15
+```
+
+`NEKRS_WIN_PIN_GROUPS=0` disables the helper. `NEKRS_WIN_PIN_GROUPS=1` forces it
+for smaller local runs. `NEKRS_WIN_PIN_PASSES=0` keeps the helper alive while
+the NekRS rank processes are running, so late-created threads are also pinned.
+
 Direct command equivalent:
 
 ```powershell
