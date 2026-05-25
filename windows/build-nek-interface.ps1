@@ -322,7 +322,7 @@ $fortranBase = @(
 
 $fortranName = [IO.Path]::GetFileNameWithoutExtension($FortranCompiler)
 if ($fortranName -match '^(ifx|ifort)$') {
-    $dynamicCommonBlocks = 'vptsol,gmre1,gmre2,gmres,spltprec,gxyz,giso1,giso2,gisod,gmfact,gsurf,gvolm,mass,solnd,bqcb,vptmsk,cbm2,diverg,input5,input6,input8,input9,inputmi,cbout_mask'
+    $dynamicCommonBlocks = 'vptsol,gmre1,gmre2,gmres,spltprec,gxyz,giso1,giso2,gisod,gmfact,gsurf,gvolm,mass,solnd,bqcb,vptmsk,cbm2,diverg,input5,input6,input8,input9,inputmi,cbout_mask,mghr,chkrms,cbplan_vol_ms,adj_real,chkavg'
     $fortranBase += "/Qdyncom`"$dynamicCommonBlocks`""
     Write-Host "Dynamic COMMON: $dynamicCommonBlocks"
 }
